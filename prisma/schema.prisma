@@ -72,6 +72,10 @@ model User {
   is_active     Boolean   @default(true)
   created_at    DateTime  @default(now())
 
+  // Restored Auth fields to prevent Next.js cache querying errors
+  emailVerified DateTime?
+  image         String?
+
   // References
   exams         Exam[]    @relation("ExamCreator")
 
