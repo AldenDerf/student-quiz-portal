@@ -46,6 +46,52 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return null;
       },
     }),
+    CredentialsProvider({
+      id: "student-login",
+      name: "Student Number",
+      credentials: {
+        student_num: { label: "Student Number", type: "text" },
+      },
+      async authorize(credentials) {
+        const parsedCredentials = z
+          .object({ student_num: z.string().min(1) })
+          .safeParse(credentials);
+
+        if (parsedCredentials.success) {
+          const { student_num } = parsedCredentials.data;
+          console.log(`[Auth] Attempting student login for: ${student_num}`);
+
+          const student = await prisma.student.findUnique({
+            where: { student_num },
+            include: { enrollments: true },
+          });
+
+          // Block if student doesn't exist or has zero valid enrollments
+          if (!student) {
+            console.warn(`[Auth] Student not found: ${student_num}`);
+            return null;
+          }
+          if (student.enrollments.length === 0) {
+            console.warn(
+              `[Auth] Student found but has NO enrollments: ${student_num}`,
+            );
+            return null;
+          }
+
+          console.log(
+            `[Auth] Login successful for: ${student.firstname} ${student.lastname}`,
+          );
+          // Format to NextAuth expected interface mapped with student role
+          return {
+            id: student.id.toString(),
+            name: `${student.firstname} ${student.lastname}`,
+            email: student.email,
+            role: "student",
+          };
+        }
+        return null;
+      },
+    }),
   ],
   callbacks: {
     async jwt({ token, user }) {
@@ -54,9 +100,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.id = user.id as string;
       }
       return token;
-    },
-    async redirect({ url, baseUrl }) {
-      return `${baseUrl}/dashboard`;
     },
     async session({ session, token }) {
       if (session.user && token) {

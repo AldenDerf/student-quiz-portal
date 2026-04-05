@@ -20,6 +20,9 @@ export default function Navbar({ userName }: NavbarProps) {
         <Link href="/dashboard" style={styles.logo}>
           Student Quiz Portal
         </Link>
+        <Link href="/dashboard/students/import" style={styles.navLink}>
+          Import Students
+        </Link>
       </div>
 
       <div style={styles.profileContainer}>
@@ -67,6 +70,16 @@ const styles = {
     fontWeight: "700",
     color: "#2563eb",
     textDecoration: "none",
+  },
+  navLink: {
+    fontSize: "0.875rem",
+    fontWeight: "500",
+    color: "#6b7280",
+    textDecoration: "none",
+    marginLeft: "1.5rem",
+    padding: "0.25rem 0.75rem",
+    borderRadius: "6px",
+    transition: "background-color 0.15s",
   },
   profileContainer: {
     position: "relative" as const,

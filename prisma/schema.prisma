@@ -88,6 +88,7 @@ model Enrollment {
   student_id Int
   subject_id Int
   term_id    Int
+  section    String?  @db.VarChar(10) // e.g. "A", "B", "Set A", "Set B"
 
   student    Student  @relation(fields: [student_id], references: [id], onDelete: Cascade)
   subject    Subject  @relation(fields: [subject_id], references: [id], onDelete: Cascade)
@@ -107,8 +108,35 @@ model Exam {
   subject     Subject  @relation(fields: [subject_id], references: [id], onDelete: Cascade)
   creator     User     @relation("ExamCreator", fields: [creator_id], references: [id])
   exam_results ExamResult[]
+  questions   Question[]
 
   @@map("exams")
+}
+
+// 6.5 Questions
+model Question {
+  id          Int      @id @default(autoincrement())
+  exam_id     Int
+  question_text String @db.Text
+  marks       Int      @default(1)
+  order_index Int      @default(0)
+
+  exam        Exam     @relation(fields: [exam_id], references: [id], onDelete: Cascade)
+  options     QuestionOption[]
+
+  @@map("questions")
+}
+
+// 6.6 Question Options
+model QuestionOption {
+  id          Int      @id @default(autoincrement())
+  question_id Int
+  option_text String   @db.Text
+  is_correct  Boolean  @default(false)
+
+  question    Question @relation(fields: [question_id], references: [id], onDelete: Cascade)
+
+  @@map("question_options")
 }
 
 // 7. Exam Results
