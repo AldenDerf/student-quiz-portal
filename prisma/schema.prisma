@@ -1,0 +1,124 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum Gender {
+  Male
+  Female
+  Other
+}
+
+enum UserRole {
+  admin
+  exam_creator
+  exporter
+}
+
+// 1. Subject Catalog
+model Subject {
+  id           Int      @id @default(autoincrement())
+  subject_code String   @unique @db.VarChar(20)
+  subject_name String   @db.VarChar(100)
+  
+  enrollments  Enrollment[]
+  exams        Exam[]
+
+  @@map("subjects")
+}
+
+// 2. Students
+model Student {
+  id          Int      @id @default(autoincrement())
+  student_num String   @unique @db.VarChar(50)
+  firstname   String   @db.VarChar(50)
+  middlename  String?  @db.VarChar(50)
+  lastname    String   @db.VarChar(50)
+  gender      Gender?
+  email       String   @unique @db.VarChar(100)
+
+  enrollments Enrollment[]
+  exam_results ExamResult[]
+
+  @@map("students")
+}
+
+// 3. Academic Terms
+model AcademicTerm {
+  id          Int      @id @default(autoincrement())
+  school_year String   @db.VarChar(15)
+  semester    String   @db.VarChar(20)
+
+  enrollments Enrollment[]
+
+  @@map("academic_terms")
+}
+
+// 4. Users (Includes NextAuth specific optional fields)
+model User {
+  id            Int       @id @default(autoincrement())
+  username      String?   @unique @db.VarChar(50)
+  fullname      String?   @db.VarChar(100)
+  email         String?   @unique @db.VarChar(100)
+  password_hash String?   @db.VarChar(255)
+  role          UserRole  @default(exam_creator)
+  is_active     Boolean   @default(true)
+  created_at    DateTime  @default(now())
+
+  // References
+  exams         Exam[]    @relation("ExamCreator")
+
+  @@map("users")
+}
+
+// 5. Enrollments
+model Enrollment {
+  id         Int      @id @default(autoincrement())
+  student_id Int
+  subject_id Int
+  term_id    Int
+
+  student    Student  @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  subject    Subject  @relation(fields: [subject_id], references: [id], onDelete: Cascade)
+  term       AcademicTerm @relation(fields: [term_id], references: [id], onDelete: Cascade)
+
+  @@map("enrollments")
+}
+
+// 6. Exams
+model Exam {
+  id          Int      @id @default(autoincrement())
+  subject_id  Int
+  creator_id  Int
+  exam_name   String   @db.VarChar(100)
+  total_marks Int
+
+  subject     Subject  @relation(fields: [subject_id], references: [id], onDelete: Cascade)
+  creator     User     @relation("ExamCreator", fields: [creator_id], references: [id])
+  exam_results ExamResult[]
+
+  @@map("exams")
+}
+
+// 7. Exam Results
+model ExamResult {
+  id          Int      @id @default(autoincrement())
+  student_id  Int
+  exam_id     Int
+  score       Int
+  percentage  Decimal? @db.Decimal(5,2)
+  ai_feedback String?  @db.Text
+  taken_at    DateTime @default(now())
+
+  student     Student  @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  exam        Exam     @relation(fields: [exam_id], references: [id], onDelete: Cascade)
+
+  @@map("exam_results")
+}
