@@ -54,8 +54,30 @@ export default async function ExamPage({
     redirect("/student/portal"); // Or show an error message
   }
 
+  // Shuffle helper (Fisher-Yates)
+  const shuffleArray = <T,>(array: T[]): T[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  // 1. Shuffle the Questions themselves
+  const shuffledQuestions = shuffleArray(exam.questions).map((q) => ({
+    ...q,
+    // 2. Shuffle the Options within each question
+    options: shuffleArray(q.options),
+  }));
+
+  const shuffledExam = {
+    ...exam,
+    questions: shuffledQuestions,
+  };
+
   // Convert dates and BigInts if any to prevent React Serialization errors
-  const safeExam = JSON.parse(JSON.stringify(exam));
+  const safeExam = JSON.parse(JSON.stringify(shuffledExam));
 
   return (
     <ExamEngineClient exam={safeExam} studentId={parseInt(session.user.id)} />

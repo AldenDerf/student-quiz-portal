@@ -1,7 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Loader2, Clock, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  Loader2,
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  Play,
+} from "lucide-react";
 import { submitExam } from "@/app/actions/exam";
 import { useRouter } from "next/navigation";
 
@@ -33,10 +40,13 @@ export default function ExamEngineClient({
 }) {
   const router = useRouter();
 
+  const [isStarted, setIsStarted] = useState(false);
+  const [violations, setViolations] = useState(0);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selections, setSelections] = useState<Record<number, number>>({});
   const [timeLeft, setTimeLeft] = useState(60 * 60); // 60 minutes in seconds
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const currentQuestion = exam.questions[currentIdx];
   const totalQuestions = exam.questions.length;
@@ -53,33 +63,118 @@ export default function ExamEngineClient({
     return `${m}:${s}`;
   };
 
+  // Track current selections in a ref for stable use in event listeners
+  const selectionsRef = useRef(selections);
+  useEffect(() => {
+    selectionsRef.current = selections;
+  }, [selections]);
+
+  // Stable Submission handler
+  const handleFinalSubmit = useCallback(
+    async (currentSelections?: Record<number, number>) => {
+      if (isSubmitting) return;
+      setIsSubmitting(true);
+
+      const dataToSubmit = currentSelections || selectionsRef.current;
+
+      try {
+        const result = await submitExam(studentId, exam.id, dataToSubmit);
+        if (result.success) {
+          router.push("/student/results");
+        } else {
+          alert("Submission failed. The score may not be saved.");
+          setIsSubmitting(false);
+        }
+      } catch (e) {
+        setIsSubmitting(false);
+      }
+    },
+    [studentId, exam.id, isSubmitting, router],
+  );
+
+  // Lockdown Logic: Fullscreen & Visibility
+  useEffect(() => {
+    if (!isStarted) return;
+
+    // 1. Prevent accidental refresh/close
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+
+    // 2. Detect Tab Switching
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        processViolation("Tab switching detected");
+      }
+    };
+
+    // 3. Track Fullscreen status
+    const handleFullscreenChange = () => {
+      const isFull = !!document.fullscreenElement;
+      setIsFullscreen(isFull);
+      if (isStarted && !isFull) {
+        processViolation("Fullscreen exited");
+      }
+    };
+
+    const processViolation = (reason: string) => {
+      setViolations((v) => v + 1);
+      // We'll handle the logic (alerts/submission) in a side-effect useEffect
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, [isStarted, handleFinalSubmit]);
+
+  // Effect to handle violations (Strikes)
+  useEffect(() => {
+    if (violations === 0 || !isStarted) return;
+
+    if (violations >= 3) {
+      alert(
+        "CRITICAL: 3 strikes reached. Your exam is being submitted automatically.",
+      );
+      handleFinalSubmit();
+    } else {
+      alert(
+        `WARNING: Strike ${violations} of 3. Your current progress has been reset. You must return to the start screen.`,
+      );
+      setIsStarted(false);
+      setSelections({});
+      selectionsRef.current = {};
+    }
+  }, [violations, handleFinalSubmit]); // isStarted NOT in dependency to avoid loop when we set it to false
+
   // Timer logic
   useEffect(() => {
+    if (!isStarted) return;
     if (timeLeft <= 0) {
       handleFinalSubmit(); // Auto Submit
       return;
     }
     const timerId = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
     return () => clearInterval(timerId);
-  }, [timeLeft]);
+  }, [timeLeft, isStarted, handleFinalSubmit]);
 
-  // Submission handler
-  const handleFinalSubmit = useCallback(async () => {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
-
+  const startExam = async () => {
     try {
-      const result = await submitExam(studentId, exam.id, selections);
-      if (result.success) {
-        router.push("/student/results");
-      } else {
-        alert("Submission failed. The score may not be saved.");
-        setIsSubmitting(false);
-      }
-    } catch (e) {
-      setIsSubmitting(false);
+      await document.documentElement.requestFullscreen();
+      setIsStarted(true);
+      setIsFullscreen(true);
+    } catch (err) {
+      console.error("Fullscreen request failed", err);
+      // Fallback: still start even if fullscreen fails (e.g. browser restriction)
+      setIsStarted(true);
     }
-  }, [selections, studentId, exam.id, isSubmitting, router]);
+  };
 
   // If no questions exist in DB
   if (totalQuestions === 0) {
@@ -90,20 +185,90 @@ export default function ExamEngineClient({
     );
   }
 
+  // PRE-EXAM START SCREEN
+  if (!isStarted) {
+    return (
+      <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-6 font-sans">
+        <div className="max-w-2xl w-full bg-white rounded-3xl shadow-xl border border-zinc-200 p-8 sm:p-12 text-center">
+          <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-8">
+            <Clock className="text-indigo-600 h-10 w-10" />
+          </div>
+          <h1 className="text-3xl font-extrabold text-zinc-900 mb-4">
+            Security Check & Instructions
+          </h1>
+          <div className="text-left space-y-4 mb-10 bg-zinc-50 p-6 rounded-2xl border border-zinc-100">
+            <h3 className="font-bold text-zinc-800">
+              Exam Rules (Strict Lockdown):
+            </h3>
+            <ul className="list-disc list-inside text-zinc-600 space-y-2 text-sm">
+              <li>
+                This exam will enter <strong>Fullscreen Mode</strong>{" "}
+                immediately.
+              </li>
+              <li>
+                <strong>3-Strike Rule:</strong> Any tab switch or fullscreen
+                exit will reset your progress.
+              </li>
+              <li>
+                On the <strong>3rd Strike</strong>, the exam will automatically
+                submit and end.
+              </li>
+              <li>Calculators and external aids are prohibited.</li>
+              <li>
+                Timer: <strong>60 minutes</strong>. The exam auto-submits on
+                timeout.
+              </li>
+            </ul>
+            {violations > 0 && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-700 text-sm font-bold animate-pulse text-center">
+                  Strikes Used: {violations} / 3
+                </p>
+              </div>
+            )}
+          </div>
+          <button
+            onClick={startExam}
+            className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-lg shadow-lg shadow-indigo-100 transition-all transform active:scale-95 flex items-center justify-center gap-3">
+            <Play size={20} /> I Understand, Start Exam
+          </button>
+          <p className="mt-6 text-xs text-zinc-400">
+            By clicking start, you agree to follow the academic integrity
+            guidelines.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-zinc-50 font-sans text-zinc-900 flex flex-col">
       {/* Header */}
       <header className="bg-white border-b border-zinc-200 px-6 py-4 flex justify-between items-center shadow-sm z-10 sticky top-0">
         <div>
-          <h1 className="text-xl font-bold text-zinc-800">
-            {exam.subject.subject_code} - {exam.subject.subject_name}
+          <h1 className="text-xl font-bold text-zinc-800 flex items-center gap-2">
+            {exam.subject.subject_code}
+            {violations > 0 && (
+              <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full animate-pulse">
+                Flagged: {violations} Violations
+              </span>
+            )}
           </h1>
           <p className="text-sm text-zinc-500 font-medium">{exam.exam_name}</p>
         </div>
-        <div
-          className={`flex items-center gap-2 px-4 py-2 rounded-full font-mono text-lg font-semibold ${timeLeft < 300 ? "bg-red-100 text-red-700" : "bg-indigo-50 text-indigo-700"}`}>
-          <Clock size={20} />
-          {formatTime(timeLeft)}
+        <div className="flex items-center gap-4">
+          {!isFullscreen && (
+            <button
+              onClick={() => document.documentElement.requestFullscreen()}
+              className="text-xs text-red-600 font-bold underline hover:text-red-700 transition-colors">
+              Re-enter Fullscreen (Required)
+            </button>
+          )}
+          <div
+            className={`flex items-center gap-2 px-4 py-2 rounded-full font-mono text-lg font-semibold ${timeLeft < 300 ? "bg-red-100 text-red-700" : "bg-indigo-50 text-indigo-700"}`}>
+            <Clock size={20} />
+            {formatTime(timeLeft)}
+          </div>
         </div>
       </header>
 
@@ -177,7 +342,7 @@ export default function ExamEngineClient({
                 </button>
               ) : (
                 <button
-                  onClick={handleFinalSubmit}
+                  onClick={() => handleFinalSubmit()}
                   disabled={isSubmitting}
                   className="flex items-center justify-center gap-2 px-8 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow-sm transition-all active:scale-95 disabled:opacity-70">
                   {isSubmitting ? (
@@ -224,7 +389,7 @@ export default function ExamEngineClient({
 
             <div className="mt-8">
               <button
-                onClick={handleFinalSubmit}
+                onClick={() => handleFinalSubmit()}
                 disabled={isSubmitting}
                 className="w-full flex items-center justify-center gap-2 py-3 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl font-medium shadow-sm disabled:opacity-50 transition-colors">
                 {isSubmitting ? (
