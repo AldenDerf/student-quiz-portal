@@ -81,8 +81,14 @@ export default async function StudentPortalPage() {
                 <div
                   key={exam.id}
                   className="bg-white p-6 rounded-2xl shadow-sm border border-zinc-200 hover:shadow-md transition-shadow relative overflow-hidden flex flex-col">
-                  {hasTaken && (
-                    <div className="absolute top-0 right-0 bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-bl-lg">
+                  {exam.exam_results.length === 1 && (
+                    <div className="absolute top-0 right-0 bg-amber-100 text-amber-700 text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase">
+                      Retake Available
+                    </div>
+                  )}
+
+                  {exam.exam_results.length >= 2 && (
+                    <div className="absolute top-0 right-0 bg-green-100 text-green-700 text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase">
                       COMPLETED
                     </div>
                   )}
@@ -105,27 +111,70 @@ export default async function StudentPortalPage() {
                     </div>
                   </div>
 
-                  <div className="mt-auto pt-4 border-t border-zinc-100">
-                    {hasTaken ? (
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium text-zinc-500">
-                          Score:{" "}
-                          <strong className="text-green-600">
-                            {result?.score} / {exam.total_marks}
-                          </strong>
-                        </span>
-                        <Link
-                          href="/student/results"
-                          className="text-sm text-indigo-600 font-semibold hover:underline">
-                          View Result details &rarr;
-                        </Link>
-                      </div>
-                    ) : (
+                  <div className="mt-auto pt-4 border-t border-zinc-100 flex flex-col gap-3">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-zinc-500 uppercase tracking-tight">
+                        Attempts Used:
+                      </span>
+                      <span
+                        className={`text-sm font-bold ${exam.exam_results.length >= 2 ? "text-red-500" : "text-indigo-600"}`}>
+                        {exam.exam_results.length} / 2
+                      </span>
+                    </div>
+
+                    {exam.exam_results.length === 0 ? (
                       <Link
                         href={`/student/exam/${exam.id}`}
                         className="w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold shadow-sm transition-colors">
                         <Play size={16} /> Begin Exam
                       </Link>
+                    ) : exam.exam_results.length === 1 ? (
+                      <div className="flex flex-col gap-2">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-sm font-medium text-zinc-500">
+                            First Score:{" "}
+                            <strong className="text-zinc-700">
+                              {exam.exam_results[0].score} / {exam.total_marks}
+                            </strong>
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
+                          <Link
+                            href={`/student/exam/${exam.id}`}
+                            className="flex-1 flex items-center justify-center gap-2 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold text-sm shadow-sm transition-colors">
+                            Retake Exam
+                          </Link>
+                          <Link
+                            href="/student/results"
+                            className="flex-1 flex items-center justify-center gap-2 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-lg font-bold text-sm transition-colors">
+                            Results
+                          </Link>
+                        </div>
+                        <p className="text-[10px] text-amber-600 font-medium italic text-center">
+                          Note: Retake score is calculated as 95% of your actual
+                          performance.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-sm font-medium text-zinc-500">
+                            Latest Score:{" "}
+                            <strong className="text-green-600">
+                              {
+                                exam.exam_results[exam.exam_results.length - 1]
+                                  .score
+                              }{" "}
+                              / {exam.total_marks}
+                            </strong>
+                          </span>
+                        </div>
+                        <Link
+                          href="/student/results"
+                          className="w-full flex items-center justify-center gap-2 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-lg font-semibold transition-colors">
+                          View Final Results
+                        </Link>
+                      </div>
                     )}
                   </div>
                 </div>

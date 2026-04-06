@@ -38,8 +38,32 @@ export async function submitExam(
       }
     }
 
-    const percentage =
+    const calculatedPercentage =
       totalMarks > 0 ? parseFloat(((score / totalMarks) * 100).toFixed(2)) : 0;
+
+    // Check if this is a retake or if they've exceeded the limit
+    const previousAttempts = await prisma.examResult.count({
+      where: {
+        student_id: studentId,
+        exam_id: examId,
+      },
+    });
+
+    if (previousAttempts >= 2) {
+      return {
+        success: false,
+        error:
+          "Maximum attempts reached. You can only take this exam twice (1 original + 1 retake).",
+      };
+    }
+
+    const isRetake = previousAttempts === 1;
+    let finalPercentage = calculatedPercentage;
+
+    if (isRetake) {
+      // Multiply by 0.95 to make the highest possible score 95% for retakes
+      finalPercentage = parseFloat((calculatedPercentage * 0.95).toFixed(2));
+    }
 
     // Upsert or Create Result
     const newResult = await prisma.examResult.create({
@@ -47,7 +71,7 @@ export async function submitExam(
         student_id: studentId,
         exam_id: examId,
         score,
-        percentage,
+        percentage: finalPercentage,
       },
     });
 

@@ -1,0 +1,11 @@
+Verifying Proportional Retake Logic and Limits...
+Using Student ID: 1
+Using Exam ID: 4 Name: Midterm Web System and Tech
+Cleaned up previous results for test student.
+--- Attempt 1: First Take (Perfect) ---
+Result 1: 100% (Expected: 100%)
+--- Attempt 2: Retake (Nearly Perfect) ---
+Result 2: 93.1% (Expected Proportional: 93.1%)
+--- Attempt 2: Retake (Perfect) ---
+Result Perfect Retake: 95% (Expected: 95%)
+Verification Finished.

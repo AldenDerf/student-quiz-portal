@@ -44,6 +44,16 @@ export default async function ExamPage({
     );
   }
 
+  // Check for previous attempts
+  const results = await prisma.examResult.findMany({
+    where: { student_id: parseInt(session.user.id), exam_id: examId },
+    orderBy: { taken_at: "asc" },
+  });
+
+  if (results.length >= 2) {
+    redirect("/student/portal"); // Or show an error message
+  }
+
   // Convert dates and BigInts if any to prevent React Serialization errors
   const safeExam = JSON.parse(JSON.stringify(exam));
 
