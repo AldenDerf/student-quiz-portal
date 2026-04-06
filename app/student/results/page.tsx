@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/prisma/db";
-import { CheckCircle, AlertTriangle, Sparkles, BookOpen } from "lucide-react";
+import { CheckCircle, AlertTriangle, BookOpen } from "lucide-react";
 import Link from "next/link";
 
 export default async function StudentResultsPage() {
@@ -103,22 +103,6 @@ export default async function StudentResultsPage() {
                   Submitted
                 </span>
               </div>
-            </div>
-          </div>
-
-          {/* AI Feedback Section */}
-          <div className="px-8 pb-10">
-            <div className="bg-indigo-50/50 rounded-2xl border border-indigo-100 p-6 relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-10">
-                <Sparkles className="h-24 w-24 text-indigo-600" />
-              </div>
-              <h3 className="flex items-center gap-2 text-indigo-900 font-bold mb-3 uppercase tracking-wide text-sm">
-                <Sparkles size={16} className="text-indigo-600" />
-                AI Performance Analysis
-              </h3>
-              <p className="text-indigo-950/80 leading-relaxed font-medium relative z-10 text-lg">
-                "{latestResult.ai_feedback}"
-              </p>
             </div>
           </div>
         </div>
