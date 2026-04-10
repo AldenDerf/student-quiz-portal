@@ -54,22 +54,37 @@ export default async function ExamPage({
     redirect("/student/portal"); // Or show an error message
   }
 
-  // Shuffle helper (Fisher-Yates)
-  const shuffleArray = <T,>(array: T[]): T[] => {
+  // Seeded Shuffle helper (LCG based)
+  const seededShuffle = <T,>(array: T[], seed: number): T[] => {
     const shuffled = [...array];
+    let m = 0x80000000,
+      a = 1103515245,
+      c = 12345;
+    let s = seed;
+
+    const next = () => {
+      s = (a * s + c) % m;
+      return s / m;
+    };
+
     for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = Math.floor(next() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     return shuffled;
   };
 
+  const studentIdInt = parseInt(session.user.id);
+  const seed = studentIdInt + examId; // Stable seed for this student/exam
+
   // 1. Shuffle the Questions themselves
-  const shuffledQuestions = shuffleArray(exam.questions).map((q) => ({
-    ...q,
-    // 2. Shuffle the Options within each question
-    options: shuffleArray(q.options),
-  }));
+  const shuffledQuestions = seededShuffle(exam.questions, seed).map(
+    (q, idx) => ({
+      ...q,
+      // 2. Shuffle the Options within each question (using a slightly different seed per question)
+      options: seededShuffle(q.options, seed + q.id),
+    }),
+  );
 
   const shuffledExam = {
     ...exam,

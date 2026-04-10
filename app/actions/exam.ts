@@ -7,21 +7,30 @@ export async function submitExam(
   examId: number,
   selections: Record<number, number>,
 ) {
+  const startTime = Date.now();
   try {
+    console.log(`[ExamSubmit] Start: Student ${studentId}, Exam ${examId}`);
+
+    // 1. Fetch exam metadata and all questions with only correct options
     const exam = await prisma.exam.findUnique({
       where: { id: examId },
       include: {
         questions: {
           include: {
-            options: true,
+            options: {
+              where: { is_correct: true },
+            },
           },
         },
       },
     });
 
     if (!exam) {
+      console.error(`[ExamSubmit] Error: Exam ${examId} not found`);
       return { success: false, error: "Exam not found." };
     }
+    const fetchTime = Date.now();
+    console.log(`[ExamSubmit] Exam fetched in ${fetchTime - startTime}ms`);
 
     let score = 0;
     let totalMarks = 0;
@@ -30,10 +39,10 @@ export async function submitExam(
       totalMarks += q.marks;
 
       const selectedOptionId = selections[q.id];
-      if (!selectedOptionId) continue; // Skipped question
+      if (!selectedOptionId) continue;
 
-      const option = q.options.find((o) => o.id === selectedOptionId);
-      if (option?.is_correct) {
+      const correctOption = q.options[0]; // Since we filtered by is_correct: true
+      if (correctOption && correctOption.id === selectedOptionId) {
         score += q.marks;
       }
     }
@@ -41,15 +50,22 @@ export async function submitExam(
     const calculatedPercentage =
       totalMarks > 0 ? parseFloat(((score / totalMarks) * 100).toFixed(2)) : 0;
 
-    // Check if this is a retake or if they've exceeded the limit
+    // 2. Count previous attempts
     const previousAttempts = await prisma.examResult.count({
       where: {
         student_id: studentId,
         exam_id: examId,
       },
     });
+    const countTime = Date.now();
+    console.log(
+      `[ExamSubmit] Previous attempts (${previousAttempts}) counted in ${countTime - fetchTime}ms`,
+    );
 
     if (previousAttempts >= 2) {
+      console.warn(
+        `[ExamSubmit] Blocked: Max attempts reached for Student ${studentId}`,
+      );
       return {
         success: false,
         error:
@@ -61,11 +77,10 @@ export async function submitExam(
     let finalPercentage = calculatedPercentage;
 
     if (isRetake) {
-      // Multiply by 0.95 to make the highest possible score 95% for retakes
       finalPercentage = parseFloat((calculatedPercentage * 0.95).toFixed(2));
     }
 
-    // Upsert or Create Result
+    // 3. Create Result
     const newResult = await prisma.examResult.create({
       data: {
         student_id: studentId,
@@ -74,10 +89,14 @@ export async function submitExam(
         percentage: finalPercentage,
       },
     });
+    const saveTime = Date.now();
+    console.log(
+      `[ExamSubmit] Result saved in ${saveTime - countTime}ms. Total: ${saveTime - startTime}ms`,
+    );
 
     return { success: true, resultId: newResult.id };
   } catch (error: any) {
-    console.error("Exam submission failed:", error);
+    console.error(`[ExamSubmit] CRITICAL ERROR:`, error);
     return {
       success: false,
       error: "Internal Server Error during exam processing.",

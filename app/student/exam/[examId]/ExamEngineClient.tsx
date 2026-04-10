@@ -46,6 +46,8 @@ export default function ExamEngineClient({
   const [selections, setSelections] = useState<Record<number, number>>({});
   const [timeLeft, setTimeLeft] = useState(60 * 60); // 60 minutes in seconds
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionStatus, setSubmissionStatus] = useState<string | null>(null);
+
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const currentQuestion = exam.questions[currentIdx];
@@ -63,6 +65,35 @@ export default function ExamEngineClient({
     return `${m}:${s}`;
   };
 
+  const storageKey = `exam_progress_${studentId}_${exam.id}`;
+
+  // Load progress from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        const { selections: s, currentIdx: i } = JSON.parse(saved);
+        if (s) {
+          setSelections(s);
+          selectionsRef.current = s;
+        }
+        if (typeof i === "number") setCurrentIdx(i);
+      } catch (e) {
+        console.error("Failed to load progress", e);
+      }
+    }
+  }, [storageKey]);
+
+  // Save progress to localStorage whenever it changes
+  useEffect(() => {
+    if (isStarted) {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({ selections, currentIdx }),
+      );
+    }
+  }, [selections, currentIdx, isStarted, storageKey]);
+
   // Track current selections in a ref for stable use in event listeners
   const selectionsRef = useRef(selections);
   useEffect(() => {
@@ -70,27 +101,39 @@ export default function ExamEngineClient({
   }, [selections]);
 
   // Stable Submission handler
-  const handleFinalSubmit = useCallback(
-    async (currentSelections?: Record<number, number>) => {
-      if (isSubmitting) return;
-      setIsSubmitting(true);
+  const handleFinalSubmit = useCallback(async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setSubmissionStatus("Submitting your answers...");
 
-      const dataToSubmit = currentSelections || selectionsRef.current;
+    // Timeout alert for slow networks
+    const statusTimeout = setTimeout(() => {
+      setSubmissionStatus(
+        "Server is busy, still processing... please do not refresh.",
+      );
+    }, 6000);
 
-      try {
-        const result = await submitExam(studentId, exam.id, dataToSubmit);
-        if (result.success) {
-          router.push("/student/results");
-        } else {
-          alert("Submission failed. The score may not be saved.");
-          setIsSubmitting(false);
-        }
-      } catch (e) {
+    try {
+      // Use the stable ref to get the absolute latest selections
+      const finalSelections = selectionsRef.current;
+      const result = await submitExam(studentId, exam.id, finalSelections);
+      clearTimeout(statusTimeout);
+
+      if (result.success) {
+        localStorage.removeItem(storageKey);
+        router.push("/student/results");
+      } else {
+        alert(result.error || "Submission failed. The score may not be saved.");
         setIsSubmitting(false);
+        setSubmissionStatus(null);
       }
-    },
-    [studentId, exam.id, isSubmitting, router],
-  );
+    } catch (e) {
+      clearTimeout(statusTimeout);
+      alert("Network error. Please check your connection and try again.");
+      setIsSubmitting(false);
+      setSubmissionStatus(null);
+    }
+  }, [studentId, exam.id, isSubmitting, router, storageKey]); // Removed selections from dependencies
 
   // Lockdown Logic: Fullscreen & Visibility
   useEffect(() => {
@@ -109,13 +152,11 @@ export default function ExamEngineClient({
       }
     };
 
-    // 3. Track Fullscreen status
+    // 3. Track Fullscreen status (No longer a violation, just for state/UI)
     const handleFullscreenChange = () => {
       const isFull = !!document.fullscreenElement;
       setIsFullscreen(isFull);
-      if (isStarted && !isFull) {
-        processViolation("Fullscreen exited");
-      }
+      // Removed processViolation call on fullscreen exit
     };
 
     const processViolation = (reason: string) => {
@@ -132,24 +173,22 @@ export default function ExamEngineClient({
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
-  }, [isStarted, handleFinalSubmit]);
+  }, [isStarted]); // Simplified dependencies (removed handleFinalSubmit)
 
   // Effect to handle violations (Strikes)
   useEffect(() => {
     if (violations === 0 || !isStarted) return;
 
-    if (violations >= 3) {
+    if (violations >= 5) {
       alert(
-        "CRITICAL: 3 strikes reached. Your exam is being submitted automatically.",
+        "CRITICAL: 5 strikes reached. Your exam is being submitted automatically.",
       );
       handleFinalSubmit();
     } else {
+      setIsStarted(false); // Return to instructions screen immediately to stop listeners
       alert(
-        `WARNING: Strike ${violations} of 3. Your current progress has been reset. You must return to the start screen.`,
+        `WARNING: Strike ${violations} of 5. You must return to the instruction screen and re-enter fullscreen.`,
       );
-      setIsStarted(false);
-      setSelections({});
-      selectionsRef.current = {};
     }
   }, [violations, handleFinalSubmit]); // isStarted NOT in dependency to avoid loop when we set it to false
 
@@ -206,11 +245,15 @@ export default function ExamEngineClient({
                 immediately.
               </li>
               <li>
-                <strong>3-Strike Rule:</strong> Any tab switch or fullscreen
-                exit will reset your progress.
+                <strong>5-Strike Rule:</strong> Any tab switch or Alt-Tab will
+                be recorded as a strike.
               </li>
               <li>
-                On the <strong>3rd Strike</strong>, the exam will automatically
+                Exiting fullscreen is allowed but recommended to stay for better
+                focus.
+              </li>
+              <li>
+                On the <strong>5th Strike</strong>, the exam will automatically
                 submit and end.
               </li>
               <li>Calculators and external aids are prohibited.</li>
@@ -222,7 +265,7 @@ export default function ExamEngineClient({
             {violations > 0 && (
               <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-red-700 text-sm font-bold animate-pulse text-center">
-                  Strikes Used: {violations} / 3
+                  Strikes Used: {violations} / 5
                 </p>
               </div>
             )}
@@ -250,7 +293,7 @@ export default function ExamEngineClient({
             {exam.subject.subject_code}
             {violations > 0 && (
               <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full animate-pulse">
-                Flagged: {violations} Violations
+                Strikes: {violations} / 5
               </span>
             )}
           </h1>
@@ -354,6 +397,11 @@ export default function ExamEngineClient({
                 </button>
               )}
             </div>
+            {submissionStatus && (
+              <div className="mt-4 text-center text-sm font-medium text-indigo-600 animate-pulse">
+                {submissionStatus}
+              </div>
+            )}
           </div>
         </div>
 

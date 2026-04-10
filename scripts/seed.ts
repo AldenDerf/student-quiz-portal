@@ -1,4 +1,5 @@
 import { prisma } from "../prisma/db";
+import bcrypt from "bcryptjs";
 
 const cssQuestions = [
   {
@@ -142,7 +143,7 @@ async function main() {
     create: {
       email: "teacher@quiz.com",
       fullname: "Jane Smith",
-      password_hash: "admin", // fake hash for testing
+      password_hash: bcrypt.hashSync("admin", 10),
       role: "exam_creator",
     },
   });

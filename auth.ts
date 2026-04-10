@@ -58,7 +58,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           .safeParse(credentials);
 
         if (parsedCredentials.success) {
-          const { student_num } = parsedCredentials.data;
+          const student_num = parsedCredentials.data.student_num.trim();
           console.log(`[Auth] Attempting student login for: ${student_num}`);
 
           const student = await prisma.student.findUnique({
@@ -107,6 +107,49 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string;
       }
       return session;
+    },
+  },
+  // Allow non-secure cookies for local network access (IP-based) over HTTP
+  // This prevents 'MissingCSRF' and session loss when not using HTTPS
+  cookies: {
+    sessionToken: {
+      name: `authjs.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure:
+          process.env.NODE_ENV === "production" &&
+          process.env.AUTH_URL?.startsWith("https://")
+            ? true
+            : false,
+      },
+    },
+    callbackUrl: {
+      name: `authjs.callback-url`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure:
+          process.env.NODE_ENV === "production" &&
+          process.env.AUTH_URL?.startsWith("https://")
+            ? true
+            : false,
+      },
+    },
+    csrfToken: {
+      name: `authjs.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure:
+          process.env.NODE_ENV === "production" &&
+          process.env.AUTH_URL?.startsWith("https://")
+            ? true
+            : false,
+      },
     },
   },
 });
