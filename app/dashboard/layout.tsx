@@ -2,6 +2,8 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardLayout({
   children,
 }: {
@@ -10,7 +12,13 @@ export default async function DashboardLayout({
   const session = await auth();
 
   if (!session?.user) {
-    redirect("/api/auth/signin");
+    redirect(
+      "/api/auth/signin?callbackUrl=" + encodeURIComponent("/dashboard"),
+    );
+  }
+
+  if (session.user.role === "student") {
+    redirect("/student/portal");
   }
 
   return (
