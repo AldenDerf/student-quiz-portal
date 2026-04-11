@@ -1,11 +1,13 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma } from "@/prisma/db";
+import { prisma } from "./prisma/db";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
+  trustHost: true,
+  secret: process.env.AUTH_SECRET,
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -27,6 +29,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const user = await prisma.user.findUnique({ where: { email } });
 
           if (!user || !user.password_hash || !user.is_active) {
+            console.log("[Auth] User not found or inactive:", email);
             return null;
           }
 
@@ -58,7 +61,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           .safeParse(credentials);
 
         if (parsedCredentials.success) {
-          const { student_num } = parsedCredentials.data;
+          const student_num = parsedCredentials.data.student_num.trim();
           console.log(`[Auth] Attempting student login for: ${student_num}`);
 
           const student = await prisma.student.findUnique({

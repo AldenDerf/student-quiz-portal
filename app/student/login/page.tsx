@@ -17,10 +17,12 @@ export default function StudentLogin() {
     try {
       const result = await loginStudentAction(studentNum);
 
-      // result will only be returned if an error was caught.
-      if (result?.error) {
+      if (result && !result.success) {
         setError(result.error);
         setLoading(false);
+      } else {
+        // Fallback for some browsers/environments where server-side redirect might hang
+        window.location.href = "/student/portal";
       }
     } catch (err: any) {
       // In Next.js, redirects from server actions are thrown as special errors.
