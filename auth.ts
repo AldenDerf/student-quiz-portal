@@ -1,11 +1,13 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma } from "@/prisma/db";
+import { prisma } from "./prisma/db";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
+  trustHost: true,
+  secret: process.env.AUTH_SECRET,
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -27,6 +29,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const user = await prisma.user.findUnique({ where: { email } });
 
           if (!user || !user.password_hash || !user.is_active) {
+            console.log("[Auth] User not found or inactive:", email);
             return null;
           }
 
@@ -107,49 +110,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string;
       }
       return session;
-    },
-  },
-  // Allow non-secure cookies for local network access (IP-based) over HTTP
-  // This prevents 'MissingCSRF' and session loss when not using HTTPS
-  cookies: {
-    sessionToken: {
-      name: `authjs.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure:
-          process.env.NODE_ENV === "production" &&
-          process.env.AUTH_URL?.startsWith("https://")
-            ? true
-            : false,
-      },
-    },
-    callbackUrl: {
-      name: `authjs.callback-url`,
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure:
-          process.env.NODE_ENV === "production" &&
-          process.env.AUTH_URL?.startsWith("https://")
-            ? true
-            : false,
-      },
-    },
-    csrfToken: {
-      name: `authjs.csrf-token`,
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure:
-          process.env.NODE_ENV === "production" &&
-          process.env.AUTH_URL?.startsWith("https://")
-            ? true
-            : false,
-      },
     },
   },
 });

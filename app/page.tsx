@@ -1,5 +1,18 @@
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/api/auth/signin?callbackUrl=" + encodeURIComponent("/"));
+  }
+
+  if (session.user.role === "student") {
+    redirect("/student/portal");
+  }
+
   redirect("/dashboard");
 }

@@ -49,6 +49,9 @@ export default function ExamEngineClient({
   const [submissionStatus, setSubmissionStatus] = useState<string | null>(null);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // Fullscreen exit overlay: null = hidden, number = countdown, 'expired' = must click
+  const [fsWarning, setFsWarning] = useState<number | "expired" | null>(null);
+  const fsCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const currentQuestion = exam.questions[currentIdx];
   const totalQuestions = exam.questions.length;
@@ -93,6 +96,18 @@ export default function ExamEngineClient({
       );
     }
   }, [selections, currentIdx, isStarted, storageKey]);
+
+  // Clear autosave when student NAVIGATES AWAY (back button, link, etc.)
+  // useEffect cleanup reliably fires on unmount regardless of navigation method
+  useEffect(() => {
+    return () => {
+      // Only clear if exam was started (i.e. the student navigated away mid-exam)
+      // Successful submission already calls removeItem explicitly
+      if (isStarted) {
+        localStorage.removeItem(storageKey);
+      }
+    };
+  }, [isStarted, storageKey]);
 
   // Track current selections in a ref for stable use in event listeners
   const selectionsRef = useRef(selections);
@@ -152,11 +167,35 @@ export default function ExamEngineClient({
       }
     };
 
-    // 3. Track Fullscreen status (No longer a violation, just for state/UI)
+    // 3. Track Fullscreen — show countdown overlay on exit, require click to return
     const handleFullscreenChange = () => {
       const isFull = !!document.fullscreenElement;
       setIsFullscreen(isFull);
-      // Removed processViolation call on fullscreen exit
+      if (!isFull) {
+        // Exited fullscreen — start countdown
+        let count = 5;
+        setFsWarning(count);
+        if (fsCountdownRef.current) clearInterval(fsCountdownRef.current);
+        fsCountdownRef.current = setInterval(() => {
+          count -= 1;
+          if (count <= 0) {
+            clearInterval(fsCountdownRef.current!);
+            fsCountdownRef.current = null;
+            // Browsers BLOCK requestFullscreen() from timers (no user gesture).
+            // Show "expired" state so the student must click a button.
+            setFsWarning("expired");
+          } else {
+            setFsWarning(count);
+          }
+        }, 1000);
+      } else {
+        // Back in fullscreen — cancel overlay
+        if (fsCountdownRef.current) {
+          clearInterval(fsCountdownRef.current);
+          fsCountdownRef.current = null;
+        }
+        setFsWarning(null);
+      }
     };
 
     const processViolation = (reason: string) => {
@@ -172,8 +211,9 @@ export default function ExamEngineClient({
       window.removeEventListener("beforeunload", handleBeforeUnload);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      if (fsCountdownRef.current) clearInterval(fsCountdownRef.current);
     };
-  }, [isStarted]); // Simplified dependencies (removed handleFinalSubmit)
+  }, [isStarted]); // Simplified dependencies
 
   // Effect to handle violations (Strikes)
   useEffect(() => {
@@ -286,6 +326,61 @@ export default function ExamEngineClient({
 
   return (
     <div className="min-h-screen bg-zinc-50 font-sans text-zinc-900 flex flex-col">
+      {/* Fullscreen Exit Warning Overlay */}
+      {fsWarning !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center border-4 border-red-500">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h2 className="text-2xl font-extrabold text-red-700 mb-2">
+              Fullscreen Required!
+            </h2>
+            {fsWarning === "expired" ? (
+              <>
+                <p className="text-zinc-600 mb-2 text-sm font-medium">
+                  You MUST return to fullscreen to continue.
+                </p>
+                <p className="text-xs text-zinc-400 mb-4">
+                  Your exam time is still running:
+                </p>
+                <div
+                  className={`inline-flex items-center gap-2 px-5 py-2 rounded-full font-mono text-2xl font-bold mb-6 ${timeLeft < 300 ? "bg-red-100 text-red-700" : "bg-indigo-50 text-indigo-700"}`}>
+                  <Clock size={20} /> {formatTime(timeLeft)}
+                </div>
+                <button
+                  onClick={() =>
+                    document.documentElement.requestFullscreen().catch(() => {})
+                  }
+                  className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-lg transition-all animate-pulse">
+                  🔒 Click to Return to Fullscreen
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-zinc-600 mb-6 text-sm">
+                  You exited fullscreen. Click the button below or wait:
+                </p>
+                <div className="text-7xl font-black text-red-600 mb-6">
+                  {fsWarning}
+                </div>
+                <button
+                  onClick={() => {
+                    if (fsCountdownRef.current) {
+                      clearInterval(fsCountdownRef.current);
+                      fsCountdownRef.current = null;
+                    }
+                    setFsWarning(null);
+                    document.documentElement
+                      .requestFullscreen()
+                      .catch(() => {});
+                  }}
+                  className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-all">
+                  Return to Fullscreen Now
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
       {/* Header */}
       <header className="bg-white border-b border-zinc-200 px-6 py-4 flex justify-between items-center shadow-sm z-10 sticky top-0">
         <div>

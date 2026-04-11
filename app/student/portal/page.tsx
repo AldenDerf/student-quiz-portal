@@ -5,6 +5,8 @@ import Link from "next/link";
 import { BookOpen, Clock, Play } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 
+export const dynamic = "force-dynamic";
+
 export default async function StudentPortalPage() {
   const session = await auth();
 
