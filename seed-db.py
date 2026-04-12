@@ -2,13 +2,17 @@ import mysql.connector
 import os
 import bcrypt
 
-# TiDB Connection
+# TiDB Connection — load from environment variables (never hardcode credentials)
+# Set these before running:
+#   $env:DB_USER="3E7gu7DaxQpjNLL.root"
+#   $env:DB_PASSWORD="your-password"
+#   $env:DB_HOST="gateway01.ap-northeast-1.prod.aws.tidbcloud.com"
 db_config = {
-    'user': '3E7gu7DaxQpjNLL.root',
-    'password': 'W70JxqnPndAWHbln',
-    'host': 'gateway01.ap-northeast-1.prod.aws.tidbcloud.com',
-    'port': 4000,
-    'database': 'bsc_students',
+    'user': os.environ['DB_USER'],
+    'password': os.environ['DB_PASSWORD'],
+    'host': os.environ['DB_HOST'],
+    'port': int(os.environ.get('DB_PORT', 4000)),
+    'database': os.environ.get('DB_NAME', 'bsc_students'),
     'ssl_disabled': False
 }
 
