@@ -1,0 +1,22 @@
+[
+  {
+    "text": "Which tag is used for the largest heading in HTML?",
+    "marks": 1,
+    "options": [
+      { "text": "<h6>", "is_correct": false },
+      { "text": "<h1>", "is_correct": true },
+      { "text": "<head>", "is_correct": false },
+      { "text": "<header>", "is_correct": false }
+    ]
+  },
+  {
+    "text": "What does API stand for?",
+    "marks": 1,
+    "options": [
+      { "text": "Application Programming Interface", "is_correct": true },
+      { "text": "Automated Program Integration", "is_correct": false },
+      { "text": "Advanced Process Indicator", "is_correct": false },
+      { "text": "Array Processing Instrument", "is_correct": false }
+    ]
+  }
+]

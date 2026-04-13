@@ -42,6 +42,22 @@ export default async function StudentPortalPage() {
     },
   });
 
+  // Find all quizzes matching those subjects
+  const availableQuizzes = await prisma.quiz.findMany({
+    where: {
+      subject_id: { in: subjectIds },
+    },
+    include: {
+      subject: true,
+      quiz_results: {
+        where: { student_id: studentId },
+      },
+      _count: {
+        select: { questions: true },
+      },
+    },
+  });
+
   return (
     <div className="min-h-screen bg-zinc-50 font-sans">
       {/* Portal Navbar */}
@@ -177,6 +193,84 @@ export default async function StudentPortalPage() {
                           View Final Results
                         </Link>
                       </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Quizzes Section */}
+        <div className="mt-16 mb-8">
+          <h2 className="text-2xl font-bold text-zinc-900">
+            Available Quizzes
+          </h2>
+          <p className="text-zinc-500 mt-1">
+            Short quizzes to test your knowledge. 1 minute per item.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-20">
+          {availableQuizzes.length === 0 ? (
+            <div className="md:col-span-2 text-center p-12 bg-white rounded-2xl border border-zinc-200">
+              <p className="text-zinc-500">No active quizzes at the moment.</p>
+            </div>
+          ) : (
+            availableQuizzes.map((quiz) => {
+              const hasTaken = quiz.quiz_results.length > 0;
+              const result = hasTaken ? quiz.quiz_results[0] : null;
+
+              return (
+                <div
+                  key={quiz.id}
+                  className="bg-white p-6 rounded-2xl shadow-sm border border-zinc-200 hover:shadow-md transition-shadow flex flex-col">
+                  {hasTaken && (
+                    <div className="absolute top-0 right-0 bg-green-100 text-green-700 text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase">
+                      COMPLETED
+                    </div>
+                  )}
+
+                  <div className="flex items-start gap-4 mb-6">
+                    <div
+                      className={`p-3 rounded-xl ${hasTaken ? "bg-green-50 text-green-600" : "bg-blue-50 text-blue-600"}`}>
+                      <BookOpen size={24} />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                        {quiz.subject.subject_code}
+                      </span>
+                      <h3 className="text-lg font-bold text-zinc-800 leading-tight mt-0.5">
+                        {quiz.quiz_name}
+                      </h3>
+                      <div className="flex items-center gap-4 text-xs text-zinc-500 mt-2">
+                        <div className="flex items-center gap-1">
+                          <Clock size={12} /> {quiz._count.questions} Mins
+                        </div>
+                        <div>{quiz._count.questions} Items</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-auto pt-4 border-t border-zinc-100">
+                    {hasTaken ? (
+                      <div className="flex justify-between items-center">
+                        <div className="text-sm font-medium text-zinc-500">
+                          Score:{" "}
+                          <strong className="text-green-600">
+                            {result?.score} / {quiz.total_marks}
+                          </strong>
+                        </div>
+                        <div className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-md font-bold">
+                          {result?.percentage?.toString()}%
+                        </div>
+                      </div>
+                    ) : (
+                      <Link
+                        href={`/student/quiz/${quiz.id}`}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow-sm transition-colors">
+                        <Play size={16} /> Take Quiz
+                      </Link>
                     )}
                   </div>
                 </div>
