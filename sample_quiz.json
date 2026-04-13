@@ -1,0 +1,26 @@
+{
+  "quiz_name": "Sample Programming Quiz",
+  "subject_code": "CS101",
+  "questions": [
+    {
+      "text": "What does CSS stand for?",
+      "marks": 1,
+      "options": [
+        { "text": "Cascading Style Sheets", "is_correct": true },
+        { "text": "Colorful Style Sheets", "is_correct": false },
+        { "text": "Creative Style Sheets", "is_correct": false },
+        { "text": "Computer Style Sheets", "is_correct": false }
+      ]
+    },
+    {
+      "text": "Which language is used for web logic?",
+      "marks": 1,
+      "options": [
+        { "text": "Python", "is_correct": false },
+        { "text": "JavaScript", "is_correct": true },
+        { "text": "HTML", "is_correct": false },
+        { "text": "SQL", "is_correct": false }
+      ]
+    }
+  ]
+}

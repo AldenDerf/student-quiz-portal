@@ -1,0 +1,301 @@
+[
+  {
+    "text": "What is the primary objective of data persistence in web development?",
+    "marks": 1,
+    "options": [
+      {
+        "text": "To allow websites to have 'permanent memory' and save data across refreshes.",
+        "is_correct": true
+      },
+      {
+        "text": "To increase the speed of the user's internet connection.",
+        "is_correct": false
+      },
+      {
+        "text": "To convert JavaScript code into HTML automatically.",
+        "is_correct": false
+      },
+      {
+        "text": "To hide the source code of the website from the browser.",
+        "is_correct": false
+      }
+    ]
+  },
+  {
+    "text": "Which format is considered the 'Universal Language of Data' for internet communication?",
+    "marks": 1,
+    "options": [
+      { "text": "HTML", "is_correct": false },
+      { "text": "JSON", "is_correct": true },
+      { "text": "LocalDB", "is_correct": false },
+      { "text": "Python", "is_correct": false }
+    ]
+  },
+  {
+    "text": "In the shipping crate analogy, which function represents 'packing' your data into text?",
+    "marks": 1,
+    "options": [
+      { "text": "JSON.parse()", "is_correct": false },
+      { "text": "JSON.stringify()", "is_correct": true },
+      { "text": "localStorage.setItem()", "is_correct": false },
+      { "text": "fetch()", "is_correct": false }
+    ]
+  },
+  {
+    "text": "What is the purpose of JSON.parse()?",
+    "marks": 1,
+    "options": [
+      {
+        "text": "To convert a text string back into a JavaScript object.",
+        "is_correct": true
+      },
+      {
+        "text": "To delete data from the browser's memory.",
+        "is_correct": false
+      },
+      { "text": "To send a request to a server.", "is_correct": false },
+      {
+        "text": "To create a visual table in the Application tab.",
+        "is_correct": false
+      }
+    ]
+  },
+  {
+    "text": "Where is LocalStorage data physically stored?",
+    "marks": 1,
+    "options": [
+      { "text": "On a remote cloud server.", "is_correct": false },
+      { "text": "Directly in the user's web browser.", "is_correct": true },
+      {
+        "text": "In the computer's RAM (cleared on shutdown).",
+        "is_correct": false
+      },
+      { "text": "Within the website's CSS files.", "is_correct": false }
+    ]
+  },
+  {
+    "text": "Which method is used to save a piece of data to LocalStorage?",
+    "marks": 1,
+    "options": [
+      { "text": "localStorage.getItem()", "is_correct": false },
+      { "text": "localStorage.saveData()", "is_correct": false },
+      { "text": "localStorage.setItem()", "is_correct": true },
+      { "text": "localStorage.push()", "is_correct": false }
+    ]
+  },
+  {
+    "text": "To view saved LocalStorage data in Chrome, which Developer Tools tab should you use?",
+    "marks": 1,
+    "options": [
+      { "text": "Console", "is_correct": false },
+      { "text": "Elements", "is_correct": false },
+      { "text": "Application", "is_correct": true },
+      { "text": "Network", "is_correct": false }
+    ]
+  },
+  {
+    "text": "What is the primary role of the Fetch API?",
+    "marks": 1,
+    "options": [
+      { "text": "To style the user interface.", "is_correct": false },
+      {
+        "text": "To make network requests and retrieve live data from the internet.",
+        "is_correct": true
+      },
+      { "text": "To encrypt the browser's history.", "is_correct": false },
+      { "text": "To speed up the JSON.parse() function.", "is_correct": false }
+    ]
+  },
+  {
+    "text": "What does the 'async' keyword do when placed before a function?",
+    "marks": 1,
+    "options": [
+      {
+        "text": "It ensures the function always returns a Promise.",
+        "is_correct": true
+      },
+      {
+        "text": "It makes the function run instantly without waiting.",
+        "is_correct": false
+      },
+      {
+        "text": "It prevents the function from accessing LocalStorage.",
+        "is_correct": false
+      },
+      {
+        "text": "It converts the function's output into a JSON string.",
+        "is_correct": false
+      }
+    ]
+  },
+  {
+    "text": "Where can the 'await' keyword be used?",
+    "marks": 1,
+    "options": [
+      { "text": "Anywhere in a JavaScript file.", "is_correct": false },
+      { "text": "Only inside an async function.", "is_correct": true },
+      { "text": "Only within a JSON object.", "is_correct": false },
+      {
+        "text": "Inside the Application tab of Developer Tools.",
+        "is_correct": false
+      }
+    ]
+  },
+  {
+    "text": "What happens to the execution of an async function when it hits an 'await' keyword?",
+    "marks": 1,
+    "options": [
+      {
+        "text": "It pauses until the Promise is resolved.",
+        "is_correct": true
+      },
+      { "text": "It crashes the browser's main thread.", "is_correct": false },
+      {
+        "text": "It skips the current line and moves to the next one.",
+        "is_correct": false
+      },
+      {
+        "text": "It resets all variables in the function to null.",
+        "is_correct": false
+      }
+    ]
+  },
+  {
+    "text": "Why is Async/Await preferred over older Promise-chain (.then) syntax?",
+    "marks": 1,
+    "options": [
+      {
+        "text": "It makes the code look and behave more like synchronous, linear code.",
+        "is_correct": true
+      },
+      {
+        "text": "It is the only way to use the Fetch API.",
+        "is_correct": false
+      },
+      {
+        "text": "It automatically saves all data to LocalStorage.",
+        "is_correct": false
+      },
+      { "text": "It forces the user to refresh the page.", "is_correct": false }
+    ]
+  },
+  {
+    "text": "Which block is recommended for error handling when using Async/Await?",
+    "marks": 1,
+    "options": [
+      { "text": "if...else", "is_correct": false },
+      { "text": "try...catch", "is_correct": true },
+      { "text": "wait...stop", "is_correct": false },
+      { "text": "JSON.error()", "is_correct": false }
+    ]
+  },
+  {
+    "text": "What is an API (Application Programming Interface) in the context of fetching data?",
+    "marks": 1,
+    "options": [
+      {
+        "text": "A special data-only website or service used to request live information.",
+        "is_correct": true
+      },
+      {
+        "text": "A type of browser plugin that stores passwords.",
+        "is_correct": false
+      },
+      {
+        "text": "A programming language used only for CSS.",
+        "is_correct": false
+      },
+      {
+        "text": "The physical cable connecting a computer to the internet.",
+        "is_correct": false
+      }
+    ]
+  },
+  {
+    "text": "What does 'non-blocking' mean in the context of Async/Await?",
+    "marks": 1,
+    "options": [
+      {
+        "text": "The entire program freezes until the data arrives.",
+        "is_correct": false
+      },
+      {
+        "text": "The user interface remains responsive while waiting for slow operations.",
+        "is_correct": true
+      },
+      {
+        "text": "It blocks other websites from seeing your data.",
+        "is_correct": false
+      },
+      {
+        "text": "It stops the internet connection to save power.",
+        "is_correct": false
+      }
+    ]
+  },
+  {
+    "text": "If you want to retrieve a saved value named 'username' from LocalStorage, which code is correct?",
+    "marks": 1,
+    "options": [
+      { "text": "localStorage.getItem('username');", "is_correct": true },
+      { "text": "localStorage.putItem('username');", "is_correct": false },
+      { "text": "JSON.parse('username');", "is_correct": false },
+      { "text": "fetch('username');", "is_correct": false }
+    ]
+  },
+  {
+    "text": "When sending data over the internet, why can't we send JavaScript objects directly?",
+    "marks": 1,
+    "options": [
+      {
+        "text": "Computers must send plain text over the internet.",
+        "is_correct": true
+      },
+      {
+        "text": "JavaScript objects are too heavy for cables.",
+        "is_correct": false
+      },
+      {
+        "text": "Sending objects is illegal in most countries.",
+        "is_correct": false
+      },
+      {
+        "text": "JavaScript objects only work on Apple computers.",
+        "is_correct": false
+      }
+    ]
+  },
+  {
+    "text": "In a standard fetch request using async/await, what is usually the first thing you 'await'?",
+    "marks": 1,
+    "options": [
+      { "text": "The JSON.parse() function.", "is_correct": false },
+      { "text": "The fetch() call to the URL.", "is_correct": true },
+      { "text": "The localStorage.setItem() method.", "is_correct": false },
+      { "text": "The user clicking the refresh button.", "is_correct": false }
+    ]
+  },
+  {
+    "text": "What happens to data in LocalStorage when a user closes their browser tab?",
+    "marks": 1,
+    "options": [
+      { "text": "It is immediately deleted.", "is_correct": false },
+      {
+        "text": "It remains stored and is available when they return.",
+        "is_correct": true
+      },
+      { "text": "It is sent to the developer via email.", "is_correct": false },
+      { "text": "It is converted into an HTML file.", "is_correct": false }
+    ]
+  },
+  {
+    "text": "What is the result of the code: typeof JSON.stringify({age: 25})?",
+    "marks": 1,
+    "options": [
+      { "text": "object", "is_correct": false },
+      { "text": "string", "is_correct": true },
+      { "text": "number", "is_correct": false },
+      { "text": "undefined", "is_correct": false }
+    ]
+  }
+]

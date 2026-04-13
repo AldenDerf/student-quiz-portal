@@ -13,6 +13,7 @@ model Subject {
   subject_name String       @db.VarChar(100)
   enrollments  Enrollment[]
   exams        Exam[]
+  quizzes      Quiz[]
 
   @@map("subjects")
 }
@@ -27,6 +28,7 @@ model Student {
   email        String       @unique @db.VarChar(100)
   enrollments  Enrollment[]
   exam_results ExamResult[]
+  quiz_results QuizResult[]
 
   @@map("students")
 }
@@ -52,6 +54,7 @@ model User {
   emailVerified DateTime?
   image         String?
   exams         Exam[]    @relation("ExamCreator")
+  quizzes       Quiz[]    @relation("QuizCreator")
 
   @@map("users")
 }
@@ -126,6 +129,61 @@ model ExamResult {
   @@index([student_id])
   @@index([exam_id])
   @@map("exam_results")
+}
+
+model Quiz {
+  id           Int          @id @default(autoincrement())
+  subject_id   Int
+  creator_id   Int
+  quiz_name    String       @db.VarChar(100)
+  total_marks  Int
+  creator      User         @relation("QuizCreator", fields: [creator_id], references: [id])
+  subject      Subject      @relation(fields: [subject_id], references: [id], onDelete: Cascade)
+  questions    QuizQuestion[]
+  quiz_results QuizResult[]
+
+  @@index([creator_id])
+  @@index([subject_id])
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id            Int              @id @default(autoincrement())
+  quiz_id       Int
+  question_text String           @db.Text
+  marks         Int              @default(1)
+  order_index   Int              @default(0)
+  options       QuizOption[]
+  quiz          Quiz             @relation(fields: [quiz_id], references: [id], onDelete: Cascade)
+
+  @@index([quiz_id])
+  @@map("quiz_questions")
+}
+
+model QuizOption {
+  id          Int          @id @default(autoincrement())
+  question_id Int
+  option_text String       @db.Text
+  is_correct  Boolean      @default(false)
+  question    QuizQuestion @relation(fields: [question_id], references: [id], onDelete: Cascade)
+
+  @@index([question_id])
+  @@map("quiz_options")
+}
+
+model QuizResult {
+  id         Int      @id @default(autoincrement())
+  student_id Int
+  quiz_id    Int
+  score      Int
+  percentage Decimal? @db.Decimal(5, 2)
+  taken_at   DateTime @default(now())
+  quiz       Quiz     @relation(fields: [quiz_id], references: [id], onDelete: Cascade)
+  student    Student  @relation(fields: [student_id], references: [id], onDelete: Cascade)
+
+  @@index([student_id])
+  @@index([quiz_id])
+  @@map("quiz_results")
 }
 
 enum Gender {
