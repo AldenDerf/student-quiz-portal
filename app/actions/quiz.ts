@@ -27,30 +27,27 @@ export async function uploadQuiz(
       0,
     );
 
-    // Create Quiz in a transaction
-    const quiz = await prisma.$transaction(async (tx) => {
-      const newQuiz = await tx.quiz.create({
-        data: {
-          quiz_name: quizName,
-          subject_id: subjectId,
-          creator_id: creatorId,
-          total_marks: totalMarks,
-          questions: {
-            create: questions.map((q: any, qIdx: number) => ({
-              question_text: q.text,
-              marks: q.marks || 1,
-              order_index: qIdx,
-              options: {
-                create: q.options.map((opt: any) => ({
-                  option_text: opt.text,
-                  is_correct: opt.is_correct,
-                })),
-              },
-            })),
-          },
+    // Create Quiz
+    const quiz = await prisma.quiz.create({
+      data: {
+        quiz_name: quizName,
+        subject_id: subjectId,
+        creator_id: creatorId,
+        total_marks: totalMarks,
+        questions: {
+          create: questions.map((q: any, qIdx: number) => ({
+            question_text: q.text,
+            marks: q.marks || 1,
+            order_index: qIdx,
+            options: {
+              create: q.options.map((opt: any) => ({
+                option_text: opt.text,
+                is_correct: opt.is_correct,
+              })),
+            },
+          })),
         },
-      });
-      return newQuiz;
+      },
     });
 
     revalidatePath("/admin/quizzes");
