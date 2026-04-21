@@ -75,9 +75,7 @@ export async function submitQuiz(
       include: {
         questions: {
           include: {
-            options: {
-              where: { is_correct: true },
-            },
+            options: true,
           },
         },
       },
@@ -88,13 +86,27 @@ export async function submitQuiz(
     }
 
     let score = 0;
+    const responseData = [];
+
     for (const q of quiz.questions) {
       const selectedOptionId = selections[q.id];
+      const correctOption = q.options.find((opt) => opt.is_correct);
+      const isCorrect = !!(
+        selectedOptionId &&
+        correctOption &&
+        selectedOptionId === correctOption.id
+      );
+
+      if (isCorrect) {
+        score += q.marks;
+      }
+
       if (selectedOptionId) {
-        const correctOption = q.options[0];
-        if (correctOption && correctOption.id === selectedOptionId) {
-          score += q.marks;
-        }
+        responseData.push({
+          question_id: q.id,
+          selected_option_id: selectedOptionId,
+          is_correct: isCorrect,
+        });
       }
     }
 
@@ -107,6 +119,9 @@ export async function submitQuiz(
         quiz_id: quizId,
         score,
         percentage,
+        responses: {
+          create: responseData,
+        },
       },
     });
 
@@ -114,6 +129,31 @@ export async function submitQuiz(
   } catch (error: any) {
     console.error("[SubmitQuiz] Error:", error);
     return { success: false, error: "Failed to submit quiz" };
+  }
+}
+
+export async function getQuizResultDetail(resultId: number) {
+  try {
+    const result = await prisma.quizResult.findUnique({
+      where: { id: resultId },
+      include: {
+        quiz: {
+          include: {
+            subject: true,
+            questions: {
+              include: {
+                options: true,
+              },
+            },
+          },
+        },
+        responses: true,
+      },
+    });
+    return result;
+  } catch (error) {
+    console.error("[GetQuizResultDetail] Error:", error);
+    return null;
   }
 }
 

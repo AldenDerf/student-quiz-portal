@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Check,
+  X,
   Play,
   ShieldAlert,
   BookOpen,
@@ -17,6 +18,7 @@ import { useRouter } from "next/navigation";
 type Option = {
   id: number;
   option_text: string;
+  is_correct: boolean;
 };
 
 type Question = {
@@ -54,6 +56,12 @@ export default function QuizEngineClient({
   const [submissionStatus, setSubmissionStatus] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fsWarning, setFsWarning] = useState<number | "expired" | null>(null);
+  const [submissionResult, setSubmissionResult] = useState<{
+    score: number;
+    total: number;
+    percentage: number;
+    resultId: number;
+  } | null>(null);
   const fsCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const currentQuestion = quiz.questions[currentIdx];
@@ -111,6 +119,15 @@ export default function QuizEngineClient({
     setSubmissionStatus("Submitting your quiz...");
 
     try {
+      if (document.fullscreenElement) {
+        setIsStarted(false);
+        setFsWarning(null);
+        if (fsCountdownRef.current) clearInterval(fsCountdownRef.current);
+        await document.exitFullscreen();
+      }
+    } catch (e) {}
+
+    try {
       const result = await submitQuiz(
         studentId,
         quiz.id,
@@ -118,7 +135,26 @@ export default function QuizEngineClient({
       );
       if (result.success) {
         localStorage.removeItem(storageKey);
-        router.push("/student/portal"); // Or to a result page if you have one
+        setIsStarted(false); // Ensure it's false even if not in fullscreen
+
+        // Calculate scores locally for immediate display
+        let score = 0;
+        quiz.questions.forEach((q) => {
+          const selectedId = selectionsRef.current[q.id];
+          const correctOpt = q.options.find((o) => o.is_correct);
+          if (selectedId && correctOpt && selectedId === correctOpt.id) {
+            score += q.marks;
+          }
+        });
+        const total = quiz.questions.reduce((sum, q) => sum + q.marks, 0);
+
+        setSubmissionResult({
+          score,
+          total,
+          percentage: total > 0 ? (score / total) * 100 : 0,
+          resultId: result.resultId!,
+        });
+        setIsSubmitting(false);
       } else {
         alert(result.error || "Submission failed.");
         setIsSubmitting(false);
@@ -129,7 +165,7 @@ export default function QuizEngineClient({
       setIsSubmitting(false);
       setSubmissionStatus(null);
     }
-  }, [studentId, quiz.id, isSubmitting, router, storageKey]);
+  }, [studentId, quiz.id, isSubmitting, storageKey, quiz.questions]);
 
   // Lockdown Logic (Same as Exam)
   useEffect(() => {
@@ -214,6 +250,149 @@ export default function QuizEngineClient({
       setIsStarted(true);
     }
   };
+
+  if (isSubmitting) {
+    return (
+      <div className="min-h-screen bg-zinc-50 flex flex-col items-center justify-center p-6 text-center font-sans">
+        <div className="relative mb-8">
+          <div className="w-24 h-24 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+          <Loader2
+            className="absolute inset-0 m-auto text-blue-600 animate-pulse"
+            size={32}
+          />
+        </div>
+        <h2 className="text-3xl font-black text-zinc-900 mb-3 animate-bounce">
+          Submitting...
+        </h2>
+        <p className="text-zinc-500 font-medium max-w-sm">
+          {submissionStatus ||
+            "Please wait while we calculate your score and secure your response history."}
+        </p>
+      </div>
+    );
+  }
+
+  if (submissionResult) {
+    return (
+      <div className="min-h-screen bg-zinc-50 font-sans text-zinc-900 flex flex-col">
+        <header className="bg-white border-b border-zinc-200 px-6 py-4 flex justify-between items-center shadow-sm sticky top-0 z-10">
+          <div>
+            <h1 className="text-xl font-bold text-zinc-800">Quiz Results</h1>
+            <p className="text-sm text-zinc-500 font-medium">
+              {quiz.quiz_name}
+            </p>
+          </div>
+          <button
+            onClick={() => router.push("/student/portal")}
+            className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-lg font-bold transition-colors">
+            Back to Portal
+          </button>
+        </header>
+
+        <div className="max-w-4xl w-full mx-auto p-6 space-y-8 pb-20">
+          {/* Summary Card */}
+          <div className="bg-white rounded-3xl shadow-xl border border-zinc-200 overflow-hidden text-center p-10">
+            <div
+              className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 ${submissionResult.percentage >= 60 ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
+              <Check size={48} strokeWidth={3} />
+            </div>
+            <h2 className="text-4xl font-black text-zinc-900 mb-2">
+              {submissionResult.score} / {submissionResult.total}
+            </h2>
+            <p className="text-xl font-bold text-zinc-500 mb-10 uppercase tracking-widest">
+              Final Score ({submissionResult.percentage.toFixed(1)}%)
+            </p>
+
+            <div
+              className={`py-3 px-6 rounded-2xl inline-block font-black text-lg ${submissionResult.percentage >= 60 ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+              {submissionResult.percentage >= 60 ? "PASSED" : "KEEP STUDYING"}
+            </div>
+          </div>
+
+          <h3 className="text-2xl font-black text-zinc-800 pt-4">
+            Item Review
+          </h3>
+
+          <div className="space-y-6">
+            {quiz.questions.map((q, idx) => {
+              const selectedId = selections[q.id];
+              const correctOpt = q.options.find((o) => o.is_correct);
+              const isCorrect = selectedId === correctOpt?.id;
+
+              return (
+                <div
+                  key={q.id}
+                  className={`bg-white rounded-2xl border-2 shadow-sm overflow-hidden ${isCorrect ? "border-green-100" : "border-red-100"}`}>
+                  <div
+                    className={`px-6 py-4 font-black flex items-center justify-between ${isCorrect ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
+                    <span className="text-sm">ITEM {idx + 1}</span>
+                    <div className="flex items-center gap-2 text-base">
+                      {isCorrect ? (
+                        <>
+                          <Check size={20} strokeWidth={3} /> CORRECT
+                        </>
+                      ) : (
+                        <>
+                          <X size={20} strokeWidth={3} /> INCORRECT
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div className="p-6 space-y-6">
+                    <p className="text-xl font-bold text-zinc-800">
+                      {q.question_text}
+                    </p>
+                    <div className="grid gap-3">
+                      {q.options.map((opt) => {
+                        const isStudentSelected = selectedId === opt.id;
+                        const isCorrectAnswer = opt.is_correct;
+
+                        let badgeStyle =
+                          "border-zinc-100 text-zinc-500 bg-zinc-50";
+                        if (isStudentSelected && isCorrectAnswer)
+                          badgeStyle =
+                            "border-green-500 bg-green-50 text-green-700 ring-2 ring-green-100";
+                        else if (isStudentSelected && !isCorrectAnswer)
+                          badgeStyle =
+                            "border-red-500 bg-red-50 text-red-700 ring-2 ring-red-100";
+                        else if (isCorrectAnswer)
+                          badgeStyle =
+                            "border-green-500 bg-green-50 text-green-700 border-dashed";
+
+                        return (
+                          <div
+                            key={opt.id}
+                            className={`p-4 rounded-xl border-2 flex items-center justify-between transition-all ${badgeStyle}`}>
+                            <span className="font-semibold">
+                              {opt.option_text}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              {isStudentSelected && (
+                                <span
+                                  className={`text-[10px] font-black uppercase px-2 py-1 rounded shadow-sm ${isCorrect ? "bg-green-600 text-white" : "bg-red-600 text-white"}`}>
+                                  Your Answer
+                                </span>
+                              )}
+                              {isCorrectAnswer && (
+                                <span className="text-[10px] font-black uppercase bg-green-100 text-green-700 border border-green-200 px-2 py-1 rounded flex items-center gap-1">
+                                  <Check size={12} strokeWidth={4} /> Correct
+                                  Choice
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!isStarted) {
     return (
