@@ -155,6 +155,7 @@ model QuizQuestion {
   order_index   Int              @default(0)
   options       QuizOption[]
   quiz          Quiz             @relation(fields: [quiz_id], references: [id], onDelete: Cascade)
+  responses     QuizResponse[]
 
   @@index([quiz_id])
   @@map("quiz_questions")
@@ -166,24 +167,42 @@ model QuizOption {
   option_text String       @db.Text
   is_correct  Boolean      @default(false)
   question    QuizQuestion @relation(fields: [question_id], references: [id], onDelete: Cascade)
+  responses   QuizResponse[]
 
   @@index([question_id])
   @@map("quiz_options")
 }
 
 model QuizResult {
-  id         Int      @id @default(autoincrement())
+  id         Int            @id @default(autoincrement())
   student_id Int
   quiz_id    Int
   score      Int
-  percentage Decimal? @db.Decimal(5, 2)
-  taken_at   DateTime @default(now())
-  quiz       Quiz     @relation(fields: [quiz_id], references: [id], onDelete: Cascade)
-  student    Student  @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  percentage Decimal?       @db.Decimal(5, 2)
+  taken_at   DateTime       @default(now())
+  quiz       Quiz           @relation(fields: [quiz_id], references: [id], onDelete: Cascade)
+  student    Student        @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  responses  QuizResponse[]
 
   @@index([student_id])
   @@index([quiz_id])
   @@map("quiz_results")
+}
+
+model QuizResponse {
+  id                 Int          @id @default(autoincrement())
+  quiz_result_id     Int
+  question_id        Int
+  selected_option_id Int
+  is_correct         Boolean
+  quiz_result        QuizResult   @relation(fields: [quiz_result_id], references: [id], onDelete: Cascade)
+  question           QuizQuestion @relation(fields: [question_id], references: [id], onDelete: Cascade)
+  selected_option    QuizOption   @relation(fields: [selected_option_id], references: [id], onDelete: Cascade)
+
+  @@index([quiz_result_id])
+  @@index([question_id])
+  @@index([selected_option_id])
+  @@map("quiz_responses")
 }
 
 enum Gender {

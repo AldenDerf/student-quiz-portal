@@ -254,16 +254,23 @@ export default async function StudentPortalPage() {
 
                   <div className="mt-auto pt-4 border-t border-zinc-100">
                     {hasTaken ? (
-                      <div className="flex justify-between items-center">
-                        <div className="text-sm font-medium text-zinc-500">
-                          Score:{" "}
-                          <strong className="text-green-600">
-                            {result?.score} / {quiz.total_marks}
-                          </strong>
+                      <div className="flex flex-col gap-3">
+                        <div className="flex justify-between items-center">
+                          <div className="text-sm font-medium text-zinc-500">
+                            Score:{" "}
+                            <strong className="text-green-600">
+                              {result?.score} / {quiz.total_marks}
+                            </strong>
+                          </div>
+                          <div className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-md font-bold">
+                            {result?.percentage?.toString()}%
+                          </div>
                         </div>
-                        <div className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-md font-bold">
-                          {result?.percentage?.toString()}%
-                        </div>
+                        <Link
+                          href={`/student/quiz/result/${result?.id}`}
+                          className="w-full flex items-center justify-center gap-2 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-lg font-bold text-sm transition-colors border border-zinc-200">
+                          Review Results
+                        </Link>
                       </div>
                     ) : (
                       <Link
