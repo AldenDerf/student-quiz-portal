@@ -192,6 +192,7 @@ const styles = {
     border: "1px solid #e2e8f0",
     borderRadius: "8px",
     fontSize: "1rem",
+    color: "#333",
     outline: "none",
     transition: "border-color 0.2s",
   },
