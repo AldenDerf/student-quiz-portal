@@ -157,7 +157,7 @@ export default function QuizzesPage() {
                   required
                   value={quizName}
                   onChange={(e) => setQuizName(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg placeholder-gray-600 placeholder:text-gray-600 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                   placeholder="e.g. Midterm Quiz"
                 />
               </div>

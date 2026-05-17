@@ -256,7 +256,7 @@ export default function StudentImportClient({
               <input
                 value={schoolYear}
                 onChange={(e) => setSchoolYear(e.target.value)}
-                className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm placeholder-zinc-600 placeholder:text-zinc-600 focus:ring-2 focus:ring-indigo-500 outline-none"
                 placeholder="e.g. 2025-2026"
               />
             </div>
