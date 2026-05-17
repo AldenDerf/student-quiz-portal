@@ -152,12 +152,12 @@ export default function QuizzesPage() {
                 <label className="text-sm font-semibold text-gray-700">
                   Quiz Name
                 </label>
-                <input
+                 <input
                   type="text"
                   required
                   value={quizName}
                   onChange={(e) => setQuizName(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg placeholder-gray-600 placeholder:text-gray-600 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-600 placeholder:text-gray-600 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                   placeholder="e.g. Midterm Quiz"
                 />
               </div>
@@ -170,10 +170,10 @@ export default function QuizzesPage() {
                   required
                   value={subjectId}
                   onChange={(e) => setSubjectId(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-                  <option value="">Select a subject</option>
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                  <option value="" className="text-gray-900">Select a subject</option>
                   {subjects.map((s) => (
-                    <option key={s.id} value={s.id}>
+                    <option key={s.id} value={s.id} className="text-gray-900">
                       [{s.subject_code}] {s.subject_name}
                     </option>
                   ))}
