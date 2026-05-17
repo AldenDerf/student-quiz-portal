@@ -237,12 +237,12 @@ export default function StudentImportClient({
               <select
                 value={subjectCode}
                 onChange={(e) => setSubjectCode(e.target.value)}
-                className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white">
-                <option value="" disabled>
+                className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm text-zinc-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white">
+                <option value="" disabled className="text-zinc-900">
                   — Select a subject —
                 </option>
                 {subjects.map((s) => (
-                  <option key={s.id} value={s.subject_code}>
+                  <option key={s.id} value={s.subject_code} className="text-zinc-900">
                     {s.subject_code} — {s.subject_name}
                   </option>
                 ))}
@@ -256,7 +256,7 @@ export default function StudentImportClient({
               <input
                 value={schoolYear}
                 onChange={(e) => setSchoolYear(e.target.value)}
-                className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm text-zinc-900 placeholder-zinc-600 placeholder:text-zinc-600 focus:ring-2 focus:ring-indigo-500 outline-none"
                 placeholder="e.g. 2025-2026"
               />
             </div>
@@ -268,10 +268,10 @@ export default function StudentImportClient({
               <select
                 value={semester}
                 onChange={(e) => setSemester(e.target.value)}
-                className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-                <option>First Semester</option>
-                <option>Second Semester</option>
-                <option>Summer</option>
+                className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm text-zinc-900 focus:ring-2 focus:ring-indigo-500 outline-none">
+                <option className="text-zinc-900">First Semester</option>
+                <option className="text-zinc-900">Second Semester</option>
+                <option className="text-zinc-900">Summer</option>
               </select>
             </div>
 

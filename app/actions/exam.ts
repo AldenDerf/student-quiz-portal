@@ -1,6 +1,86 @@
 "use server";
 
 import { prisma } from "@/prisma/db";
+import { auth } from "@/auth";
+import { revalidatePath } from "next/cache";
+
+export async function uploadExam(
+  examName: string,
+  subjectId: number,
+  questions: any[],
+) {
+  const session = await auth();
+  if (
+    !session ||
+    !session.user ||
+    (session.user.role !== "admin" && session.user.role !== "exam_creator")
+  ) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  const creatorId = parseInt(session.user.id);
+
+  try {
+    // Calculate total marks
+    const totalMarks = questions.reduce(
+      (sum: number, q: any) => sum + (q.marks || 1),
+      0,
+    );
+
+    // Create Exam
+    const exam = await prisma.exam.create({
+      data: {
+        exam_name: examName,
+        subject_id: subjectId,
+        creator_id: creatorId,
+        total_marks: totalMarks,
+        questions: {
+          create: questions.map((q: any, qIdx: number) => ({
+            question_text: q.text,
+            marks: q.marks || 1,
+            order_index: qIdx,
+            options: {
+              create: q.options.map((opt: any) => ({
+                option_text: opt.text,
+                is_correct: opt.is_correct,
+              })),
+            },
+          })),
+        },
+      },
+    });
+
+    revalidatePath("/dashboard/exams");
+    return { success: true, examId: exam.id };
+  } catch (error: any) {
+    console.error("[UploadExam] Error:", error);
+    return { success: false, error: error.message || "Failed to upload exam" };
+  }
+}
+
+export async function getExams() {
+  return await prisma.exam.findMany({
+    include: {
+      subject: true,
+      _count: {
+        select: { questions: true },
+      },
+    },
+    orderBy: { id: "desc" },
+  });
+}
+
+export async function deleteExam(id: number) {
+  const session = await auth();
+  if (!session || !session.user || session.user.role !== "admin") {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  await prisma.exam.delete({ where: { id } });
+  revalidatePath("/dashboard/exams");
+  return { success: true };
+}
+
 
 export async function submitExam(
   studentId: number,

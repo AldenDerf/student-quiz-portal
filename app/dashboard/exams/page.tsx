@@ -1,24 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  getQuizzes,
-  uploadQuiz,
-  deleteQuiz,
-  getSubjects,
-} from "@/app/actions/quiz";
-import {
-  Loader2,
-  Upload,
-  Trash2,
-  BookOpen,
-  Clock,
-  X,
-  Plus,
-} from "lucide-react";
+import { getExams, uploadExam, deleteExam } from "@/app/actions/exam";
+import { getSubjects } from "@/app/actions/quiz";
+import { Loader2, Upload, Trash2, BookOpen, Clock, X, Plus } from "lucide-react";
 
-export default function QuizzesPage() {
-  const [quizzes, setQuizzes] = useState<any[]>([]);
+export default function ExamsPage() {
+  const [exams, setExams] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -29,7 +17,7 @@ export default function QuizzesPage() {
 
   // Form State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [quizName, setQuizName] = useState("");
+  const [examName, setExamName] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [questionsFile, setQuestionsFile] = useState<File | null>(null);
   const [parsedQuestions, setParsedQuestions] = useState<any[]>([]);
@@ -46,18 +34,18 @@ export default function QuizzesPage() {
 
   async function fetchData() {
     setLoading(true);
-    const [quizData, subjectData] = await Promise.all([
-      getQuizzes(),
+    const [examData, subjectData] = await Promise.all([
+      getExams(),
       getSubjects(),
     ]);
-    setQuizzes(quizData);
+    setExams(examData);
     setSubjects(subjectData);
     setLoading(false);
   }
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setQuizName("");
+    setExamName("");
     setSubjectId("");
     setQuestionsFile(null);
     setParsedQuestions([]);
@@ -177,7 +165,7 @@ export default function QuizzesPage() {
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!quizName || !subjectId || parsedQuestions.length === 0) {
+    if (!examName || !subjectId || parsedQuestions.length === 0) {
       setMessage({
         type: "error",
         text: "Please fill in all fields and select a valid questions file.",
@@ -189,16 +177,16 @@ export default function QuizzesPage() {
     setMessage(null);
 
     try {
-      const result = await uploadQuiz(quizName, parseInt(subjectId), parsedQuestions);
+      const result = await uploadExam(examName, parseInt(subjectId), parsedQuestions);
 
       if (result.success) {
-        setMessage({ type: "success", text: "Quiz created successfully!" });
+        setMessage({ type: "success", text: "Exam created successfully!" });
         handleCloseModal();
         fetchData();
       } else {
         setMessage({
           type: "error",
-          text: result.error || "Failed to create quiz",
+          text: result.error || "Failed to create exam",
         });
       }
     } catch (err: any) {
@@ -212,8 +200,8 @@ export default function QuizzesPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this quiz?")) return;
-    const result = await deleteQuiz(id);
+    if (!confirm("Are you sure you want to delete this exam?")) return;
+    const result = await deleteExam(id);
     if (result.success) {
       fetchData();
     } else {
@@ -225,21 +213,23 @@ export default function QuizzesPage() {
     <div className="max-w-6xl mx-auto space-y-8">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Quiz Management</h1>
-          <p className="text-gray-500">Upload and manage student quizzes</p>
+          <h1 className="text-3xl font-bold text-gray-900">Exam Management</h1>
+          <p className="text-gray-500">Upload and manage student exams</p>
         </div>
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold shadow-md hover:bg-blue-700 transition-all">
+          className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold shadow-md hover:bg-blue-700 transition-all"
+        >
           <Plus size={20} />
-          Create New Quiz
+          Create New Exam
         </button>
       </div>
 
       {message && !isModalOpen && (
         <div
-          className={`p-4 rounded-lg ${message.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+          className={`p-4 rounded-lg ${message.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
+        >
           {message.text}
         </div>
       )}
@@ -250,11 +240,12 @@ export default function QuizzesPage() {
           <div className={`bg-white rounded-2xl shadow-2xl ${parsedQuestions.length > 0 ? "max-w-4xl" : "max-w-md"} w-full overflow-hidden animate-in fade-in zoom-in duration-200 transition-all`}>
             <div className="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-900">
-                Create New Quiz
+                Create New Exam
               </h2>
               <button
                 onClick={handleCloseModal}
-                className="text-gray-400 hover:text-gray-600">
+                className="text-gray-400 hover:text-gray-600"
+              >
                 <X size={24} />
               </button>
             </div>
@@ -263,15 +254,15 @@ export default function QuizzesPage() {
               <form onSubmit={handleUpload} className={`p-6 space-y-4 ${parsedQuestions.length > 0 ? "md:w-1/2" : "w-full"}`}>
                 <div className="space-y-1">
                   <label className="text-sm font-semibold text-gray-700">
-                    Quiz Name
+                    Exam Name
                   </label>
                   <input
                     type="text"
                     required
-                    value={quizName}
-                    onChange={(e) => setQuizName(e.target.value)}
+                    value={examName}
+                    onChange={(e) => setExamName(e.target.value)}
                     className="w-full px-4 py-2 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-600 placeholder:text-gray-600 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                    placeholder="e.g. Midterm Quiz"
+                    placeholder="e.g. Midterm Exam"
                   />
                 </div>
 
@@ -283,7 +274,8 @@ export default function QuizzesPage() {
                     required
                     value={subjectId}
                     onChange={(e) => setSubjectId(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                  >
                     <option value="" className="text-gray-900">Select a subject</option>
                     {subjects.map((s) => (
                       <option key={s.id} value={s.id} className="text-gray-900">
@@ -322,7 +314,8 @@ export default function QuizzesPage() {
 
                 {message && (
                   <div
-                    className={`p-3 rounded-lg text-sm ${message.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
+                    className={`p-3 rounded-lg text-sm ${message.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}
+                  >
                     {message.text}
                   </div>
                 )}
@@ -331,14 +324,15 @@ export default function QuizzesPage() {
                   <button
                     type="submit"
                     disabled={uploading || parsedQuestions.length === 0}
-                    className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                    className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
                     {uploading ? (
                       <>
                         <Loader2 className="animate-spin" size={20} />
                         Uploading...
                       </>
                     ) : (
-                      "Create Quiz"
+                      "Create Exam"
                     )}
                   </button>
                 </div>
@@ -497,48 +491,50 @@ export default function QuizzesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {quizzes.map((quiz) => (
+          {exams.map((exam) => (
             <div
-              key={quiz.id}
-              className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all group">
+              key={exam.id}
+              className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all group"
+            >
               <div className="flex justify-between items-start mb-4">
                 <div className="p-3 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors">
                   <BookOpen size={24} />
                 </div>
                 <button
-                  onClick={() => handleDelete(quiz.id)}
-                  className="p-2 text-gray-400 hover:text-red-600 transition-colors">
+                  onClick={() => handleDelete(exam.id)}
+                  className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                >
                   <Trash2 size={20} />
                 </button>
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-1">
-                {quiz.quiz_name}
+                {exam.exam_name}
               </h3>
               <p className="text-blue-600 font-medium text-sm mb-4">
-                {quiz.subject.subject_code} - {quiz.subject.subject_name}
+                {exam.subject.subject_code} - {exam.subject.subject_name}
               </p>
 
               <div className="flex items-center gap-4 text-sm text-gray-500 pt-4 border-t border-gray-50">
                 <div className="flex items-center gap-1">
                   <span className="font-semibold text-gray-700">
-                    {quiz._count.questions}
+                    {exam._count.questions}
                   </span>{" "}
                   Items
                 </div>
                 <div className="flex items-center gap-1 border-l pl-4">
                   <Clock size={14} className="text-gray-400" />
                   <span className="font-semibold text-gray-700">
-                    {quiz._count.questions}
+                    {exam._count.questions}
                   </span>{" "}
                   Mins
                 </div>
               </div>
             </div>
           ))}
-          {quizzes.length === 0 && (
+          {exams.length === 0 && (
             <div className="col-span-full py-20 text-center bg-white rounded-3xl border-2 border-dashed border-gray-200">
               <p className="text-gray-500">
-                No quizzes found. Create your first one above!
+                No exams found. Create your first one above!
               </p>
             </div>
           )}
