@@ -301,6 +301,18 @@ export default function StudentsClient({
 
       {/* Main Student List Table */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        {/* Table Header / Summary */}
+        <div className="bg-gray-50/80 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <h3 className="font-bold text-gray-800">
+            Student Master List
+          </h3>
+          <div className="flex items-center gap-2">
+            <span className="bg-white border border-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm font-semibold shadow-sm">
+              Total Students: <span className="text-blue-600 ml-1 font-bold">{filteredStudents.length}</span>
+            </span>
+          </div>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
