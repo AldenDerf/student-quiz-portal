@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import * as xlsx from "xlsx";
 import { 
   BookOpen, 
   Award, 
@@ -16,7 +17,8 @@ import {
   ArrowLeft,
   Users,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Download
 } from "lucide-react";
 
 type SortColumn = "studentName" | "section" | "score" | "percentage" | "takenAt";
@@ -213,6 +215,34 @@ export default function ResultsClient({
   const renderSortIcon = (column: SortColumn) => {
     if (sortColumn !== column) return <span className="inline-block w-3 ml-1 opacity-0">-</span>;
     return sortDirection === "asc" ? <ArrowUp size={12} className="inline ml-1 text-blue-500" /> : <ArrowDown size={12} className="inline ml-1 text-blue-500" />;
+  };
+
+  const handleExportToExcel = () => {
+    // Format data for export exactly as it is sorted
+    const exportData = sortedSubmissions.map((s) => ({
+      "Student ID": s.studentNum,
+      "Student Name": s.studentName,
+      "Section": s.section,
+      "Score": s.score,
+      "Total Marks": selectedAssessmentTotal || 0,
+      "Percentage": `${s.percentage}%`,
+      "Status": s.percentage >= 60 ? "Passed" : "Failed",
+      "Submitted At": new Date(s.takenAt).toLocaleString()
+    }));
+
+    // Create worksheet
+    const worksheet = xlsx.utils.json_to_sheet(exportData);
+    const workbook = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(workbook, worksheet, "Results");
+
+    // Generate filename: subject_quizname_timestamp (or exam_name)
+    const timestamp = new Date().toISOString().replace(/[-:T]/g, "").split(".")[0];
+    const subjectClean = selectedSubjectCode ? selectedSubjectCode.replace(/\s+/g, "_") : "Subject";
+    const assessmentClean = selectedAssessmentName ? selectedAssessmentName.replace(/\s+/g, "_") : "Assessment";
+    const filename = `${subjectClean}_${assessmentClean}_${timestamp}.xlsx`;
+
+    // Save file
+    xlsx.writeFile(workbook, filename);
   };
 
   // Metrics calculations for the final selection
@@ -639,14 +669,22 @@ export default function ResultsClient({
           {/* Student Submissions List Table */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
             {/* Table Header / Summary */}
-            <div className="bg-gray-50/80 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="font-bold text-gray-800">
+            <div className="bg-gray-50/80 px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <h3 className="font-bold text-gray-800 self-start sm:self-auto">
                 Submission List
               </h3>
-              <div className="flex items-center gap-2">
-                <span className="bg-white border border-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm font-semibold shadow-sm">
+              <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                <span className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm">
                   Total Students: <span className="text-blue-600 ml-1 font-bold">{filteredSubmissions.length}</span>
                 </span>
+                <button
+                  onClick={handleExportToExcel}
+                  disabled={sortedSubmissions.length === 0}
+                  className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Download size={16} />
+                  Export Excel
+                </button>
               </div>
             </div>
 
