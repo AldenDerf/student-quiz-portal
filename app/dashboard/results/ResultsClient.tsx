@@ -14,8 +14,13 @@ import {
   FileText,
   HelpCircle,
   ArrowLeft,
-  Users
+  Users,
+  ArrowUp,
+  ArrowDown
 } from "lucide-react";
+
+type SortColumn = "studentName" | "section" | "score" | "percentage" | "takenAt";
+type SortDirection = "asc" | "desc";
 
 type AssessmentResult = {
   id: number;
@@ -81,6 +86,8 @@ export default function ResultsClient({
   // Table Search & Filter State
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSectionFilter, setSelectedSectionFilter] = useState<"All" | "A" | "B">("All");
+  const [sortColumn, setSortColumn] = useState<SortColumn>("studentName");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   // Helper to fetch details about selected subject
   const currentSubject = useMemo(() => {
@@ -167,6 +174,46 @@ export default function ResultsClient({
       );
     });
   }, [submissionResults, selectedSectionFilter, searchQuery]);
+
+  // Step 6: Apply Sorting over the filtered submissions
+  const sortedSubmissions = useMemo(() => {
+    return [...filteredSubmissions].sort((a, b) => {
+      let comparison = 0;
+      switch (sortColumn) {
+        case "studentName":
+          comparison = a.studentName.localeCompare(b.studentName);
+          break;
+        case "section":
+          comparison = a.section.localeCompare(b.section);
+          break;
+        case "score":
+          comparison = a.score - b.score;
+          break;
+        case "percentage":
+          comparison = a.percentage - b.percentage;
+          break;
+        case "takenAt":
+          comparison = new Date(a.takenAt).getTime() - new Date(b.takenAt).getTime();
+          break;
+      }
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+  }, [filteredSubmissions, sortColumn, sortDirection]);
+
+  // Sort interaction handlers
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const renderSortIcon = (column: SortColumn) => {
+    if (sortColumn !== column) return <span className="inline-block w-3 ml-1 opacity-0">-</span>;
+    return sortDirection === "asc" ? <ArrowUp size={12} className="inline ml-1 text-blue-500" /> : <ArrowDown size={12} className="inline ml-1 text-blue-500" />;
+  };
 
   // Metrics calculations for the final selection
   const stats = useMemo(() => {
@@ -606,17 +653,27 @@ export default function ResultsClient({
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    <th className="py-4 px-6">Student</th>
-                    <th className="py-4 px-6 text-center">Section</th>
-                    <th className="py-4 px-6 text-center">Score</th>
-                    <th className="py-4 px-6 text-center">Percentage</th>
-                    <th className="py-4 px-6">Status</th>
-                    <th className="py-4 px-6">Submitted At</th>
+                  <tr className="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider select-none">
+                    <th className="py-4 px-6 cursor-pointer hover:bg-gray-100 hover:text-gray-800 transition-colors group" onClick={() => handleSort("studentName")}>
+                      Student <span className="group-hover:opacity-100">{renderSortIcon("studentName")}</span>
+                    </th>
+                    <th className="py-4 px-6 text-center cursor-pointer hover:bg-gray-100 hover:text-gray-800 transition-colors group" onClick={() => handleSort("section")}>
+                      Section <span className="group-hover:opacity-100">{renderSortIcon("section")}</span>
+                    </th>
+                    <th className="py-4 px-6 text-center cursor-pointer hover:bg-gray-100 hover:text-gray-800 transition-colors group" onClick={() => handleSort("score")}>
+                      Score <span className="group-hover:opacity-100">{renderSortIcon("score")}</span>
+                    </th>
+                    <th className="py-4 px-6 text-center cursor-pointer hover:bg-gray-100 hover:text-gray-800 transition-colors group" onClick={() => handleSort("percentage")}>
+                      Percentage <span className="group-hover:opacity-100">{renderSortIcon("percentage")}</span>
+                    </th>
+                    <th className="py-4 px-6 text-center">Status</th>
+                    <th className="py-4 px-6 cursor-pointer hover:bg-gray-100 hover:text-gray-800 transition-colors group" onClick={() => handleSort("takenAt")}>
+                      Submitted At <span className="group-hover:opacity-100">{renderSortIcon("takenAt")}</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
-                  {filteredSubmissions.map((result) => {
+                  {sortedSubmissions.map((result) => {
                     const isPassing = result.percentage >= 60;
                     return (
                       <tr key={result.id} className="hover:bg-gray-50/50 transition-colors">
@@ -671,7 +728,7 @@ export default function ResultsClient({
                     );
                   })}
 
-                  {filteredSubmissions.length === 0 && (
+                  {sortedSubmissions.length === 0 && (
                     <tr>
                       <td colSpan={5} className="py-12 text-center text-gray-500 bg-gray-50/30">
                         <p className="text-base font-semibold text-gray-600 mb-1">No submissions recorded</p>
