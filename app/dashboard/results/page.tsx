@@ -16,7 +16,7 @@ export default async function ResultsPage() {
     redirect("/student/portal");
   }
 
-  const [examResults, quizResults, subjects] = await Promise.all([
+  const [examResults, quizResults, subjects, exams, quizzes] = await Promise.all([
     prisma.examResult.findMany({
       include: {
         student: true,
@@ -46,6 +46,22 @@ export default async function ResultsPage() {
     prisma.subject.findMany({
       orderBy: {
         subject_code: "asc",
+      },
+    }),
+    prisma.exam.findMany({
+      include: {
+        subject: true,
+      },
+      orderBy: {
+        exam_name: "asc",
+      },
+    }),
+    prisma.quiz.findMany({
+      include: {
+        subject: true,
+      },
+      orderBy: {
+        quiz_name: "asc",
       },
     }),
   ]);
@@ -89,6 +105,22 @@ export default async function ResultsPage() {
     subjectName: s.subject_name,
   }));
 
+  const cleanedExams = exams.map((e) => ({
+    id: e.id,
+    examName: e.exam_name,
+    totalMarks: e.total_marks,
+    subjectCode: e.subject.subject_code,
+    subjectName: e.subject.subject_name,
+  }));
+
+  const cleanedQuizzes = quizzes.map((q) => ({
+    id: q.id,
+    quizName: q.quiz_name,
+    totalMarks: q.total_marks,
+    subjectCode: q.subject.subject_code,
+    subjectName: q.subject.subject_name,
+  }));
+
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <div>
@@ -100,6 +132,8 @@ export default async function ResultsPage() {
         examResults={cleanedExamResults}
         quizResults={cleanedQuizResults}
         subjects={cleanedSubjects}
+        exams={cleanedExams}
+        quizzes={cleanedQuizzes}
       />
     </div>
   );
