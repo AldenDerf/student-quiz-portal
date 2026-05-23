@@ -29,6 +29,9 @@ export default function Navbar({ userName }: NavbarProps) {
         <Link href="/dashboard/quizzes" style={styles.navLink}>
           Quizzes
         </Link>
+        <Link href="/dashboard/results" style={styles.navLink}>
+          Results
+        </Link>
       </div>
 
       <div style={styles.profileContainer}>
