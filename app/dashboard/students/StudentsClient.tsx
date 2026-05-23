@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import * as xlsx from "xlsx";
 import Link from "next/link";
 import { 
   Plus, 
@@ -15,13 +16,19 @@ import {
   Loader2,
   CheckCircle,
   Filter,
-  Users
+  Users,
+  ArrowUp,
+  ArrowDown,
+  Download
 } from "lucide-react";
 import { 
   addStudentAction, 
   updateStudentAction, 
   deleteStudentAction 
 } from "@/app/actions/students";
+
+type SortColumn = "studentNum" | "name" | "email" | "gender" | "section" | "submissionsCount";
+type SortDirection = "asc" | "desc";
 
 type StudentRecord = {
   id: number;
@@ -59,6 +66,8 @@ export default function StudentsClient({
   );
   const [selectedSetFilter, setSelectedSetFilter] = useState<"All" | "A" | "B">("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortColumn, setSortColumn] = useState<SortColumn>("name");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   // Editor Modal State (Add / Update)
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -112,6 +121,73 @@ export default function StudentsClient({
       return matchesText;
     });
   }, [enrolledStudents, selectedSetFilter, searchQuery]);
+
+  // 3. Apply Sorting
+  const sortedStudents = useMemo(() => {
+    return [...filteredStudents].sort((a, b) => {
+      let comparison = 0;
+      switch (sortColumn) {
+        case "studentNum":
+          comparison = a.studentNum.localeCompare(b.studentNum);
+          break;
+        case "name":
+          const nameA = `${a.lastname} ${a.firstname} ${a.middlename}`.toLowerCase();
+          const nameB = `${b.lastname} ${b.firstname} ${b.middlename}`.toLowerCase();
+          comparison = nameA.localeCompare(nameB);
+          break;
+        case "email":
+          comparison = a.email.localeCompare(b.email);
+          break;
+        case "gender":
+          comparison = (a.gender || "").localeCompare(b.gender || "");
+          break;
+        case "section":
+          comparison = getStudentSection(a).localeCompare(getStudentSection(b));
+          break;
+        case "submissionsCount":
+          comparison = a.submissionsCount - b.submissionsCount;
+          break;
+      }
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+  }, [filteredStudents, sortColumn, sortDirection, selectedSubjectCode]);
+
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const renderSortIcon = (column: SortColumn) => {
+    if (sortColumn !== column) return <span className="inline-block w-3 ml-1 opacity-0">-</span>;
+    return sortDirection === "asc" ? <ArrowUp size={12} className="inline ml-1 text-blue-500" /> : <ArrowDown size={12} className="inline ml-1 text-blue-500" />;
+  };
+
+  const handleExportToExcel = () => {
+    const exportData = sortedStudents.map((s) => ({
+      "ID Number": s.studentNum,
+      "Last Name": s.lastname,
+      "First Name": s.firstname,
+      "Middle Name": s.middlename || "",
+      "Email Address": s.email,
+      "Gender": s.gender,
+      "Section": getStudentSection(s),
+      "Attempts": s.submissionsCount
+    }));
+
+    const worksheet = xlsx.utils.json_to_sheet(exportData);
+    const workbook = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(workbook, worksheet, "Students");
+
+    const timestamp = new Date().toISOString().replace(/[-:T]/g, "").split(".")[0];
+    const subjectClean = selectedSubjectCode ? selectedSubjectCode.replace(/\s+/g, "_") : "Subject";
+    const filename = `${subjectClean}_Students_${timestamp}.xlsx`;
+
+    xlsx.writeFile(workbook, filename);
+  };
 
   // Open Add modal
   const handleOpenAdd = () => {
@@ -302,32 +378,52 @@ export default function StudentsClient({
       {/* Main Student List Table */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         {/* Table Header / Summary */}
-        <div className="bg-gray-50/80 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h3 className="font-bold text-gray-800">
+        <div className="bg-gray-50/80 px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <h3 className="font-bold text-gray-800 self-start sm:self-auto">
             Student Master List
           </h3>
-          <div className="flex items-center gap-2">
-            <span className="bg-white border border-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm font-semibold shadow-sm">
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+            <span className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm">
               Total Students: <span className="text-blue-600 ml-1 font-bold">{filteredStudents.length}</span>
             </span>
+            <button
+              onClick={handleExportToExcel}
+              disabled={sortedStudents.length === 0}
+              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download size={16} />
+              Export Excel
+            </button>
           </div>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                <th className="py-4 px-6">ID Number</th>
-                <th className="py-4 px-6">Student Name</th>
-                <th className="py-4 px-6">Email Address</th>
-                <th className="py-4 px-6 text-center">Gender</th>
-                <th className="py-4 px-6 text-center">Section</th>
-                <th className="py-4 px-6 text-center">Attempts</th>
+              <tr className="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider select-none">
+                <th className="py-4 px-6 cursor-pointer hover:bg-gray-100 hover:text-gray-800 transition-colors group" onClick={() => handleSort("studentNum")}>
+                  ID Number <span className="group-hover:opacity-100">{renderSortIcon("studentNum")}</span>
+                </th>
+                <th className="py-4 px-6 cursor-pointer hover:bg-gray-100 hover:text-gray-800 transition-colors group" onClick={() => handleSort("name")}>
+                  Student Name <span className="group-hover:opacity-100">{renderSortIcon("name")}</span>
+                </th>
+                <th className="py-4 px-6 cursor-pointer hover:bg-gray-100 hover:text-gray-800 transition-colors group" onClick={() => handleSort("email")}>
+                  Email Address <span className="group-hover:opacity-100">{renderSortIcon("email")}</span>
+                </th>
+                <th className="py-4 px-6 text-center cursor-pointer hover:bg-gray-100 hover:text-gray-800 transition-colors group" onClick={() => handleSort("gender")}>
+                  Gender <span className="group-hover:opacity-100">{renderSortIcon("gender")}</span>
+                </th>
+                <th className="py-4 px-6 text-center cursor-pointer hover:bg-gray-100 hover:text-gray-800 transition-colors group" onClick={() => handleSort("section")}>
+                  Section <span className="group-hover:opacity-100">{renderSortIcon("section")}</span>
+                </th>
+                <th className="py-4 px-6 text-center cursor-pointer hover:bg-gray-100 hover:text-gray-800 transition-colors group" onClick={() => handleSort("submissionsCount")}>
+                  Attempts <span className="group-hover:opacity-100">{renderSortIcon("submissionsCount")}</span>
+                </th>
                 <th className="py-4 px-6 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
-              {filteredStudents.map((std) => (
+              {sortedStudents.map((std) => (
                 <tr key={std.id} className="hover:bg-gray-50/50 transition-colors">
                   {/* Student ID */}
                   <td className="py-4 px-6 font-mono font-semibold text-gray-900">
@@ -391,7 +487,7 @@ export default function StudentsClient({
                 </tr>
               ))}
 
-              {filteredStudents.length === 0 && (
+              {sortedStudents.length === 0 && (
                 <tr>
                   <td colSpan={7} className="py-16 text-center text-gray-500 bg-gray-50/20">
                     <Users className="mx-auto h-12 w-12 text-gray-300 mb-2" />
