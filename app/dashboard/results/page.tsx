@@ -74,8 +74,30 @@ export default async function ResultsPage() {
     }),
   ]);
 
+  // Filter out older submissions: keep only the latest per student per assessment
+  // (Results are already ordered by taken_at "desc" in the Prisma query)
+  const uniqueExamResults = [];
+  const seenExamSubmissions = new Set();
+  for (const er of examResults) {
+    const key = `${er.exam_id}-${er.student_id}`;
+    if (!seenExamSubmissions.has(key)) {
+      seenExamSubmissions.add(key);
+      uniqueExamResults.push(er);
+    }
+  }
+
+  const uniqueQuizResults = [];
+  const seenQuizSubmissions = new Set();
+  for (const qr of quizResults) {
+    const key = `${qr.quiz_id}-${qr.student_id}`;
+    if (!seenQuizSubmissions.has(key)) {
+      seenQuizSubmissions.add(key);
+      uniqueQuizResults.push(qr);
+    }
+  }
+
   // Clean data before sending to client component to avoid non-serializable elements or potential leaks
-  const cleanedExamResults = examResults.map((er) => ({
+  const cleanedExamResults = uniqueExamResults.map((er) => ({
     id: er.id,
     studentId: er.student_id,
     studentNum: er.student.student_num,
@@ -92,7 +114,7 @@ export default async function ResultsPage() {
     takenAt: er.taken_at.toISOString(),
   }));
 
-  const cleanedQuizResults = quizResults.map((qr) => ({
+  const cleanedQuizResults = uniqueQuizResults.map((qr) => ({
     id: qr.id,
     studentId: qr.student_id,
     studentNum: qr.student.student_num,
