@@ -19,7 +19,11 @@ export default async function ResultsPage() {
   const [examResults, quizResults, subjects, exams, quizzes] = await Promise.all([
     prisma.examResult.findMany({
       include: {
-        student: true,
+        student: {
+          include: {
+            enrollments: true,
+          },
+        },
         exam: {
           include: {
             subject: true,
@@ -32,7 +36,11 @@ export default async function ResultsPage() {
     }),
     prisma.quizResult.findMany({
       include: {
-        student: true,
+        student: {
+          include: {
+            enrollments: true,
+          },
+        },
         quiz: {
           include: {
             subject: true,
@@ -73,6 +81,7 @@ export default async function ResultsPage() {
     studentNum: er.student.student_num,
     studentName: `${er.student.lastname}, ${er.student.firstname} ${er.student.middlename || ""}`.trim(),
     studentEmail: er.student.email,
+    section: er.student.enrollments.find((e) => e.subject_id === er.exam.subject_id)?.section || "N/A",
     examId: er.exam_id,
     examName: er.exam.exam_name,
     totalMarks: er.exam.total_marks,
@@ -89,6 +98,7 @@ export default async function ResultsPage() {
     studentNum: qr.student.student_num,
     studentName: `${qr.student.lastname}, ${qr.student.firstname} ${qr.student.middlename || ""}`.trim(),
     studentEmail: qr.student.email,
+    section: qr.student.enrollments.find((e) => e.subject_id === qr.quiz.subject_id)?.section || "N/A",
     quizId: qr.quiz_id,
     quizName: qr.quiz.quiz_name,
     totalMarks: qr.quiz.total_marks,

@@ -23,6 +23,7 @@ type AssessmentResult = {
   studentNum: string;
   studentName: string;
   studentEmail: string;
+  section: string;
   examId?: number;
   quizId?: number;
   examName?: string;
@@ -77,8 +78,9 @@ export default function ResultsClient({
   const [selectedAssessmentName, setSelectedAssessmentName] = useState<string | null>(null);
   const [selectedAssessmentTotal, setSelectedAssessmentTotal] = useState<number | null>(null);
 
-  // Table Search State
+  // Table Search & Filter State
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedSectionFilter, setSelectedSectionFilter] = useState<"All" | "A" | "B">("All");
 
   // Helper to fetch details about selected subject
   const currentSubject = useMemo(() => {
@@ -148,15 +150,23 @@ export default function ResultsClient({
     });
   }, [selectedAssessmentId, selectedType, selectedSet, listAssessments, examResults, quizResults]);
 
-  // Step 5: Apply text search over submissions
+  // Step 5: Apply text search & section filter over submissions
   const filteredSubmissions = useMemo(() => {
     return submissionResults.filter((s) => {
+      // 1. Set Filter
+      if (selectedSectionFilter !== "All") {
+        const sec = s.section.toUpperCase();
+        if (selectedSectionFilter === "A" && !sec.includes("A")) return false;
+        if (selectedSectionFilter === "B" && !sec.includes("B")) return false;
+      }
+      
+      // 2. Search Text
       return (
         s.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.studentNum.toLowerCase().includes(searchQuery.toLowerCase())
       );
     });
-  }, [submissionResults, searchQuery]);
+  }, [submissionResults, selectedSectionFilter, searchQuery]);
 
   // Metrics calculations for the final selection
   const stats = useMemo(() => {
@@ -553,8 +563,8 @@ export default function ResultsClient({
             </div>
           </div>
 
-          {/* Search box for this list */}
-          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+          {/* Search box & Filters for this list */}
+          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col sm:flex-row items-center gap-4 justify-between">
             <div className="relative w-full sm:w-80">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input
@@ -565,6 +575,18 @@ export default function ResultsClient({
                 className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
               />
             </div>
+            
+            <div className="w-full sm:w-48 shrink-0">
+              <select
+                value={selectedSectionFilter}
+                onChange={(e) => setSelectedSectionFilter(e.target.value as any)}
+                className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+                <option value="All">All Sets / Sections</option>
+                <option value="A">Set A</option>
+                <option value="B">Set B</option>
+              </select>
+            </div>
           </div>
 
           {/* Student Submissions List Table */}
@@ -574,6 +596,7 @@ export default function ResultsClient({
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     <th className="py-4 px-6">Student</th>
+                    <th className="py-4 px-6 text-center">Section</th>
                     <th className="py-4 px-6 text-center">Score</th>
                     <th className="py-4 px-6 text-center">Percentage</th>
                     <th className="py-4 px-6">Status</th>
@@ -591,6 +614,13 @@ export default function ResultsClient({
                             <p className="font-bold text-gray-900">{result.studentName}</p>
                             <p className="text-xs text-gray-500 font-mono mt-0.5">{result.studentNum}</p>
                           </div>
+                        </td>
+
+                        {/* Section */}
+                        <td className="py-4 px-6 text-center">
+                          <span className="inline-block px-2.5 py-1 rounded bg-slate-100 text-slate-700 text-xs font-bold font-mono border border-slate-200">
+                            {result.section}
+                          </span>
                         </td>
 
                         {/* Marks */}
