@@ -20,14 +20,17 @@ export default function Navbar({ userName }: NavbarProps) {
         <Link href="/dashboard" style={styles.logo}>
           Student Quiz Portal
         </Link>
-        <Link href="/dashboard/students/import" style={styles.navLink}>
-          Import Students
+        <Link href="/dashboard/students" style={styles.navLink}>
+          Students
         </Link>
         <Link href="/dashboard/exams" style={styles.navLink}>
           Exams
         </Link>
         <Link href="/dashboard/quizzes" style={styles.navLink}>
           Quizzes
+        </Link>
+        <Link href="/dashboard/results" style={styles.navLink}>
+          Results
         </Link>
       </div>
 
